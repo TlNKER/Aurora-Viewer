@@ -355,6 +355,8 @@ fn compact(
     if AFTERGLOW_NO_TABS && st.tab != 0 {
         set_tab(st, prefs, 0);
     }
+    // Afterglow: no preview (details) of the selection at the bottom
+    prefs.show_details = false;
     toolbar::search_row(ui, p, inv, st, prefs, Layout::Compact, actions);
     ui.add_space(4.0);
     let (root, filtered) = list_scope(inv, st, prefs, facts);
@@ -411,6 +413,7 @@ fn explorer(
     toolbar::explorer_row(ui, p, inv, st, prefs, layout, actions);
     ui.add_space(8.0);
     let area = ui.available_rect_before_wrap();
+    prefs.show_details = false; // Afterglow: no preview pane
     let pane_w = if layout == Layout::Wide && prefs.show_details { 300.0 } else { 0.0 };
     const GAP: f32 = 8.0;
     let side_w = columns::sidebar(ui, p, area, pane_w, layout, &mut prefs.explorer);

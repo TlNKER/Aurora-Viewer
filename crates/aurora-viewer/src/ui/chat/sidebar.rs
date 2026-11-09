@@ -156,6 +156,9 @@ fn search_box(ui: &mut egui::Ui, p: &Palette, text: &mut String, width: f32) {
     );
 }
 
+/// Afterglow: the column without its search field and "+" button.
+const AFTERGLOW_NO_SEARCH_ROW: bool = true;
+
 /// Height of the search field, and the side of the button beside it.
 const SEARCH_H: f32 = 30.0;
 
@@ -306,7 +309,11 @@ pub(super) fn show(
     let ui = &mut child;
     ui.spacing_mut().item_spacing.y = 2.0;
     ui.add_space(8.0);
-    if !rail {
+    // Afterglow: no "Search or start…" field and no "+" beside it
+    if AFTERGLOW_NO_SEARCH_ROW {
+        st.side_filter.clear();
+    }
+    if !rail && !AFTERGLOW_NO_SEARCH_ROW {
         let row = egui::vec2(ui.available_width(), SEARCH_H);
         ui.allocate_ui_with_layout(row, egui::Layout::left_to_right(egui::Align::Center), |ui| {
             ui.spacing_mut().item_spacing.x = 4.0;
