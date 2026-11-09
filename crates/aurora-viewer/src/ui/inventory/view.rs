@@ -350,6 +350,9 @@ pub struct InventoryPreferences {
     pub search_library: bool,
     pub search_outfits: bool,
     pub show_library: bool,
+    /// Afterglow: the system folders hidden from the trees, by the names of
+    /// `hidden_folders::HIDEABLE` (Preferences › Afterglow › System Folders).
+    pub hidden_system_folders: Vec<String>,
     pub show_recent: bool,
     pub show_worn: bool,
     pub show_favorites: bool,
@@ -401,6 +404,7 @@ impl Default for InventoryPreferences {
             search_library: true,
             search_outfits: true,
             show_library: true,
+            hidden_system_folders: Vec::new(),
             show_recent: true,
             show_worn: true,
             show_favorites: true,
@@ -552,6 +556,9 @@ pub struct ViewCache {
     children: IdMap<Vec<Uuid>>,
     result_children: IdMap<Vec<Uuid>>,
     folders: IdSet,
+    /// Afterglow: the root's folders that System Folders can hide, and
+    /// their bit (`hidden_folders::folder_bit`).
+    hideable: IdMap<u32>,
     /// A folder's date: its newest descendant's (see `prepare`).
     folder_dates: IdMap<i64>,
     revision: u64,
@@ -664,6 +671,13 @@ impl ViewCache {
         self.folder_dates = dates;
         self.entries.par_sort_unstable_by(|a, b| compare(a, b, sort));
         self.folders = inv.folders.keys().copied().collect();
+        self.hideable = inv
+            .folders
+            .iter()
+            .filter_map(|(id, f)| {
+                super::hidden_folders::folder_bit(f.info.parent == inv.root, f.info.type_default, &f.info.name).map(|b| (*id, b))
+            })
+            .collect();
         // Keep the lists' memory: a folder gone keeps an empty list.
         self.children.values_mut().for_each(Vec::clear);
         for entry in &self.entries {
@@ -683,7 +697,8 @@ impl ViewCache {
 
     /// Changes whenever the sorted children change (see `prepare`).
     pub fn built(&self) -> u64 {
-        self.built
+        // Afterglow: a change of the hidden system folders lists the trees again
+        self.built.wrapping_add(super::hidden_folders::generation().wrapping_mul(0x9E37_79B9_7F4A_7C15))
     }
 
     /// The date a folder sorts by: its newest descendant's, 0 when it holds
@@ -698,11 +713,14 @@ impl ViewCache {
     }
 
     pub fn children_iter(&self, parent: Uuid, show_library: bool, lib_root: Uuid) -> impl Iterator<Item = Uuid> + '_ {
+        let hidden = super::hidden_folders::mask();
         self.children
             .get(&parent)
             .into_iter()
             .flatten()
             .filter(move |id| show_library || **id != lib_root)
+            // Afterglow: the system folders hidden in Preferences
+            .filter(move |id| hidden == 0 || self.hideable.get(id).is_none_or(|b| hidden & (1u64 << b) == 0))
             .copied()
     }
 

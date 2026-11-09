@@ -61,6 +61,7 @@ pub(crate) mod task_selection;
 pub mod thumbnail;
 pub(crate) mod tree;
 pub(crate) mod view;
+pub(crate) mod hidden_folders;
 pub use aurora::{DEMO_FOLDER_WINDOW as AURORA_DEMO_FOLDER_WINDOW, demo_place as aurora_demo};
 
 /// A demo scenario written for the Legacy Viewer's window (its tabs, its

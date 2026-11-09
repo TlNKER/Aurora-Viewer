@@ -376,7 +376,7 @@ pub fn page(cx: &mut Cx, tab: usize) {
                 );
             });
         }
-        _ => {
+        2 => {
             cx.group(tr!("ui-options-aurora-building"), |cx| {
                 cx.wide().choice(
                     tr!("ui-options-aurora-move-hologram"),
@@ -452,7 +452,47 @@ pub fn page(cx: &mut Cx, tab: usize) {
                 );
             });
         }
+        _ => system_folders(cx),
     }
+}
+
+/// Afterglow: Preferences › Afterglow › System Folders, Oasis's God Mode ›
+/// Hidden System Folders: a switch per system folder, on when it shows in
+/// the inventory. A hidden folder leaves the inventory's trees only; it
+/// stays on the server with its contents (`ui/inventory/hidden_folders.rs`).
+fn system_folders(cx: &mut Cx) {
+    use super::super::cx::Custom;
+    use crate::ui::inventory::hidden_folders::HIDEABLE;
+    fn hidden(s: &Settings, name: &str) -> bool {
+        s.inventory.hidden_system_folders.iter().any(|n| n == name)
+    }
+    fn set_hidden(s: &mut Settings, name: &str, hide: bool) {
+        let list = &mut s.inventory.hidden_system_folders;
+        list.retain(|n| n != name);
+        if hide {
+            list.push(name.to_owned());
+        }
+    }
+    cx.group("System Folders", |cx| {
+        cx.note("Switch a folder off to hide it from your inventory, on to show it again. Hidden folders and everything in them stay in your inventory on the server.");
+        for &(name, _) in HIDEABLE {
+            let track = Custom {
+                path: "inventory.hidden_system_folders",
+                modified: move |s: &Settings, d: &Settings| hidden(s, name) != hidden(d, name),
+                reset: move |s: &mut Settings, d: &Settings| set_hidden(s, name, hidden(d, name)),
+            };
+            let p = cx.p;
+            cx.row(name, "Shows this folder in your inventory", &track, |ui, s| {
+                let mut shown = !hidden(s, name);
+                if super::super::toggle(ui, &p, &mut shown) {
+                    set_hidden(s, name, !shown);
+                    true
+                } else {
+                    false
+                }
+            });
+        }
+    });
 }
 
 #[cfg(test)]

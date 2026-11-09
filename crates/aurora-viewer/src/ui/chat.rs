@@ -280,6 +280,9 @@ enum Start {
 /// How a conversation's lines are drawn (`LineEnv::bubbles`): legacy lines,
 /// or bubbles with the sender's name opening each group where several
 /// people write (a group or conference, the nearby chat).
+/// Afterglow: the bottom-left nearby chat bar never shows.
+pub const AFTERGLOW_NO_CHAT_BAR: bool = true;
+
 pub(crate) fn line_style(style: crate::settings::ChatStyle, group: Option<bool>) -> Option<bool> {
     match (style, group) {
         (crate::settings::ChatStyle::Legacy, _) => None,
@@ -398,10 +401,40 @@ impl ChatUi {
     /// empty bar puts it away too, where the Legacy Viewer waited for
     /// Escape. A draft keeps it.
     pub fn bar_shown(&self) -> bool {
+        // Afterglow: no nearby chat bar at the bottom left; the nearby chat
+        // is typed in the Conversations window (see `open_nearby_with`)
+        if AFTERGLOW_NO_CHAT_BAR {
+            return false;
+        }
         if self.bar_hidden {
             return self.focus_request;
         }
         !self.autohide || self.has_focus || self.focus_request || !self.input.trim().is_empty() || self.bar_emoji_open || self.bar_hovered
+    }
+
+    /// Afterglow: what would have brought the chat bar (a letter key, the
+    /// gesture key, a draft) goes to the nearby chat of the Conversations
+    /// window instead, `text` added to its draft, with the keyboard.
+    pub fn open_nearby_with(&mut self, ctx: &egui::Context, conversations_open: &mut bool, text: &str) {
+        self.draft_mut(None).push_str(text);
+        if self.nearby_apart() {
+            self.popped.raise(None, true);
+        } else {
+            self.selected = None;
+            self.contacts = false;
+            self.show_profile = false;
+            super::widgets::open_floater(ctx, "conversations", conversations_open);
+            super::widgets::bring_floater_front(ctx, "conversations");
+        }
+        self.conv_focus_request = true;
+    }
+
+    /// Afterglow: Enter opens the Conversations window as it is (Ctrl+T's
+    /// window, never closing it), with the keyboard in its field.
+    pub fn open_conversations(&mut self, ctx: &egui::Context, conversations_open: &mut bool) {
+        super::widgets::open_floater(ctx, "conversations", conversations_open);
+        super::widgets::bring_floater_front(ctx, "conversations");
+        self.conv_focus_request = true;
     }
 
     /// The toolbar's Chat bar (FSNearbyChat::onDefaultChatBarButtonClicked →

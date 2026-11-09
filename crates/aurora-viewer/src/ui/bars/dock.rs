@@ -226,7 +226,8 @@ pub fn bottom(
             out
         })
     } else {
-        if !docked {
+        // Afterglow: not even the Conversations button alone
+        if !docked && !crate::ui::chat::AFTERGLOW_NO_CHAT_BAR {
             let alone = Rect::from_min_size(geo.chat.min, Vec2::new(PAD * 2.0 + geo.button - 4.0, geo.height));
             area(&ctx, p, "chat_button", alone, |ui| {
                 let slot = geo.button - 4.0;

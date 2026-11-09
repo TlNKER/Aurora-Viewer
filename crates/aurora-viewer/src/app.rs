@@ -4584,7 +4584,8 @@ impl App {
             Action::ResetCameraAngles => self.reset_camera_angles(),
             Action::FocusSelection => self.look_at_selection(false),
             Action::ZoomSelection => self.look_at_selection(true),
-            Action::Chat => self.chat_ui.focus_request = true,
+            // Afterglow: Enter opens the Conversations window (no chat bar)
+            Action::Chat => self.chat_ui.open_conversations(&self.egui_ctx, &mut self.panels.chat),
             Action::ToggleMic => self.toggle_mic(),
             // the shortcuts of the windows, like their toolbar buttons: a
             // minimized window expands (LLFloaterReg::toggleInstance)
@@ -15644,9 +15645,19 @@ impl App {
                 let demo_autohide = if self.demo { ui::bars::demo::get() } else { Default::default() };
                 let autohide_chat_bar = self.settings.autohide_chat_bar || demo_autohide.autohide;
                 self.chat_ui.autohide = autohide_chat_bar;
+                // Afterglow: Preferences › Afterglow › System Folders
+                ui::inventory::hidden_folders::sync(&self.settings.inventory.hidden_system_folders);
                 if demo_autohide.chat_start && ctx.cumulative_frame_nr() == 300 {
                     self.chat_ui.input = "Hello!".into();
                     self.chat_ui.focus_request = true;
+                }
+                // Afterglow: no chat bar - a request for it (letter or
+                // gesture key, a draft) opens the nearby chat of the
+                // Conversations window, its text carried over
+                if ui::chat::AFTERGLOW_NO_CHAT_BAR && self.chat_ui.focus_request {
+                    self.chat_ui.focus_request = false;
+                    let text = std::mem::take(&mut self.chat_ui.input);
+                    self.chat_ui.open_nearby_with(&self.egui_ctx, &mut self.panels.chat, &text);
                 }
                 let mut mic = ui::bars::MicButton {
                     on: self.mic_on,

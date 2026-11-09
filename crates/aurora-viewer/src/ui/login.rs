@@ -962,12 +962,14 @@ pub fn show(
             .rect;
         });
 
-    // ---- version + news (right)
-    if wide {
+    // ---- version + news (right). Afterglow: hidden, with the "Check for
+    // updates" button (no updater) and the footer's News button
+    const AFTERGLOW_NO_SIDEBAR: bool = true;
+    if wide && !AFTERGLOW_NO_SIDEBAR {
         if chrome::sidebar(&ctx, p, icons, info, login_card, 330.0, lowest) {
             action = LoginAction::CheckUpdates;
         }
-    } else if info.can_check_updates {
+    } else if info.can_check_updates && !AFTERGLOW_NO_SIDEBAR {
         egui::Area::new(egui::Id::unique("login_check_updates"))
             // left of the accessibility button and the preferences cogwheel
             // of `chrome::footer`
@@ -982,7 +984,7 @@ pub fn show(
             });
     }
 
-    let chrome_action = chrome::footer(&ctx, p, icons, info, wide, form);
+    let chrome_action = chrome::footer(&ctx, p, icons, info, wide || AFTERGLOW_NO_SIDEBAR, form);
     if !matches!(chrome_action, LoginAction::None) {
         action = chrome_action;
     }
