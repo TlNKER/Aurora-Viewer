@@ -8,11 +8,12 @@
 //! names of the hidden folders; `sync` turns it into a bit mask once a frame
 //! and `ViewCache::children_iter` leaves those folders out.
 
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 
 /// The folders that can be hidden, in the pane's order, with their system
 /// folder type (LLFolderType). Matched by type, never by (translated) name;
-/// `#Aurora` has no type: it is the folder of that name at the root.
+/// `#Aurora` and `#Firestorm` have no type: each is the folder of that name
+/// at the root.
 pub const HIDEABLE: &[(&str, Option<i32>)] = &[
     ("Animations", Some(20)),
     ("Body Parts", Some(13)),
@@ -27,27 +28,41 @@ pub const HIDEABLE: &[(&str, Option<i32>)] = &[
     ("Settings", Some(56)),
     ("Textures", Some(0)),
     ("#Aurora", None),
+    ("#Firestorm", None),
 ];
 
-/// The bit of `#Aurora` (folder types stay below it).
+/// The bits of the folders without a type, by name (folder types stay
+/// below them).
 pub const AURORA_BIT: u32 = 63;
+const NAMED: &[(&str, u32)] = &[("#Aurora", AURORA_BIT), ("#Firestorm", 62)];
 
 static MASK: AtomicU64 = AtomicU64::new(0);
+static HIDE_EMPTY: AtomicBool = AtomicBool::new(true);
 static GENERATION: AtomicU64 = AtomicU64::new(0);
 
 fn bit(name: &str) -> Option<u32> {
     HIDEABLE
         .iter()
         .find(|(n, _)| *n == name)
-        .map(|(_, kind)| kind.map_or(AURORA_BIT, |k| k as u32))
+        .and_then(|(n, kind)| match kind {
+            Some(k) => Some(*k as u32),
+            None => NAMED.iter().find(|(named, _)| named == n).map(|(_, b)| *b),
+        })
 }
 
-/// Takes the setting's names (once a frame); a change lists the trees again.
-pub fn sync(hidden: &[String]) {
+/// Takes the settings (once a frame): the hidden folders' names and Hide
+/// empty folders. A change lists the trees again.
+pub fn sync(hidden: &[String], hide_empty: bool) {
     let mask = hidden.iter().filter_map(|n| bit(n)).fold(0u64, |m, b| m | (1 << b));
-    if MASK.swap(mask, Ordering::Relaxed) != mask {
+    let changed = MASK.swap(mask, Ordering::Relaxed) != mask;
+    if HIDE_EMPTY.swap(hide_empty, Ordering::Relaxed) != hide_empty || changed {
         GENERATION.fetch_add(1, Ordering::Relaxed);
     }
+}
+
+/// Folders with nothing in them, system folders included, are left out.
+pub fn hide_empty() -> bool {
+    HIDE_EMPTY.load(Ordering::Relaxed)
 }
 
 /// The hidden folders' bits.
@@ -71,7 +86,7 @@ pub fn folder_bit(parent_is_root: bool, type_default: i32, name: &str) -> Option
             .any(|(_, k)| *k == Some(type_default))
             .then_some(type_default as u32);
     }
-    (name == crate::ui::texture_library::catalogue::AURORA).then_some(AURORA_BIT)
+    NAMED.iter().find(|(n, _)| *n == name).map(|(_, b)| *b)
 }
 
 #[cfg(test)]
@@ -81,17 +96,18 @@ mod tests {
     #[test]
     fn names_become_bits_and_a_change_bumps_the_generation() {
         let before = generation();
-        sync(&["Clothing".into(), "#Aurora".into(), "Unknown".into()]);
+        sync(&["Clothing".into(), "#Aurora".into(), "Unknown".into()], true);
         assert_eq!(mask(), (1 << 5) | (1 << AURORA_BIT));
         assert_ne!(generation(), before);
         let same = generation();
-        sync(&["#Aurora".into(), "Clothing".into()]);
+        sync(&["#Aurora".into(), "Clothing".into()], true);
         assert_eq!(generation(), same, "same set, same generation");
-        sync(&[]);
+        sync(&[], true);
         assert_eq!(mask(), 0);
         assert_eq!(folder_bit(true, 5, "Clothing"), Some(5));
         assert_eq!(folder_bit(false, 5, "Clothing"), None, "only at the root");
         assert_eq!(folder_bit(true, -1, "#Aurora"), Some(AURORA_BIT));
+        assert_eq!(folder_bit(true, -1, "#Firestorm"), Some(62));
         assert_eq!(folder_bit(true, 14, "Trash"), None, "the Trash cannot be hidden");
     }
 }

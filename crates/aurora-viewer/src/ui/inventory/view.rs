@@ -353,6 +353,9 @@ pub struct InventoryPreferences {
     /// Afterglow: the system folders hidden from the trees, by the names of
     /// `hidden_folders::HIDEABLE` (Preferences › Afterglow › System Folders).
     pub hidden_system_folders: Vec<String>,
+    /// Afterglow: folders with no item anywhere inside (system folders too)
+    /// are left out of the trees; on by default.
+    pub hide_empty_folders: bool,
     pub show_recent: bool,
     pub show_worn: bool,
     pub show_favorites: bool,
@@ -405,6 +408,7 @@ impl Default for InventoryPreferences {
             search_outfits: true,
             show_library: true,
             hidden_system_folders: Vec::new(),
+            hide_empty_folders: true,
             show_recent: true,
             show_worn: true,
             show_favorites: true,
@@ -559,6 +563,9 @@ pub struct ViewCache {
     /// Afterglow: the root's folders that System Folders can hide, and
     /// their bit (`hidden_folders::folder_bit`).
     hideable: IdMap<u32>,
+    /// Afterglow: the folders that hold an item somewhere inside, or a
+    /// folder not loaded yet (it may: it stays until its contents are known).
+    filled: IdSet,
     /// A folder's date: its newest descendant's (see `prepare`).
     folder_dates: IdMap<i64>,
     revision: u64,
@@ -671,6 +678,30 @@ impl ViewCache {
         self.folder_dates = dates;
         self.entries.par_sort_unstable_by(|a, b| compare(a, b, sort));
         self.folders = inv.folders.keys().copied().collect();
+        // Afterglow: each item, and each folder still loading, keeps its
+        // folder and the folders above it
+        let mut filled = IdSet::default();
+        let starts = inv
+            .items
+            .values()
+            .map(|it| it.parent)
+            .chain(
+                inv.folders
+                    .iter()
+                    .filter(|(_, f)| f.state != crate::world::inventory::FetchState::Fetched)
+                    .map(|(id, _)| *id),
+            );
+        for start in starts {
+            let mut id = start;
+            for _ in 0..64 {
+                let Some(f) = inv.folders.get(&id) else { break };
+                if !filled.insert(id) {
+                    break;
+                }
+                id = f.info.parent;
+            }
+        }
+        self.filled = filled;
         self.hideable = inv
             .folders
             .iter()
@@ -714,6 +745,7 @@ impl ViewCache {
 
     pub fn children_iter(&self, parent: Uuid, show_library: bool, lib_root: Uuid) -> impl Iterator<Item = Uuid> + '_ {
         let hidden = super::hidden_folders::mask();
+        let hide_empty = super::hidden_folders::hide_empty();
         self.children
             .get(&parent)
             .into_iter()
@@ -721,6 +753,8 @@ impl ViewCache {
             .filter(move |id| show_library || **id != lib_root)
             // Afterglow: the system folders hidden in Preferences
             .filter(move |id| hidden == 0 || self.hideable.get(id).is_none_or(|b| hidden & (1u64 << b) == 0))
+            // Afterglow: empty folders, system folders included
+            .filter(move |id| !hide_empty || !self.folders.contains(*id) || self.filled.contains(*id))
             .copied()
     }
 

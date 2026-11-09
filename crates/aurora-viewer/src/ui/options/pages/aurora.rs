@@ -473,6 +473,13 @@ fn system_folders(cx: &mut Cx) {
             list.push(name.to_owned());
         }
     }
+    cx.group("Empty folders", |cx| {
+        cx.toggle(
+            "Hide empty folders",
+            "Folders with nothing in them, system folders included, are left out of your inventory",
+            &field!(inventory.hide_empty_folders),
+        );
+    });
     cx.group("System Folders", |cx| {
         cx.note("Switch a folder off to hide it from your inventory, on to show it again. Hidden folders and everything in them stay in your inventory on the server.");
         for &(name, _) in HIDEABLE {

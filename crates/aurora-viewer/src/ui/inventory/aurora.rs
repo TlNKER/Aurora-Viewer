@@ -330,6 +330,9 @@ fn card_height(prefs: &InventoryPreferences) -> f32 {
     if prefs.show_details { details::STRIP } else { 0.0 }
 }
 
+/// Afterglow: the inventory window without its tabs.
+const AFTERGLOW_NO_TABS: bool = true;
+
 /// The narrow window: tabs, search, the tree, the selection's card.
 #[allow(clippy::too_many_arguments)]
 fn compact(
@@ -343,10 +346,14 @@ fn compact(
     images: &std::collections::HashMap<Uuid, egui::TextureHandle>,
     actions: &mut Vec<InvAction>,
 ) {
-    // a folder window has no tabs
-    if st.scope.is_nil() {
+    // a folder window has no tabs. Afterglow: the main window neither,
+    // always on the whole inventory
+    if st.scope.is_nil() && !AFTERGLOW_NO_TABS {
         toolbar::tabs(ui, p, inv, st, prefs);
         ui.add_space(6.0);
+    }
+    if AFTERGLOW_NO_TABS && st.tab != 0 {
+        set_tab(st, prefs, 0);
     }
     toolbar::search_row(ui, p, inv, st, prefs, Layout::Compact, actions);
     ui.add_space(4.0);

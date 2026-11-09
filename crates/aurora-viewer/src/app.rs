@@ -15646,7 +15646,10 @@ impl App {
                 let autohide_chat_bar = self.settings.autohide_chat_bar || demo_autohide.autohide;
                 self.chat_ui.autohide = autohide_chat_bar;
                 // Afterglow: Preferences › Afterglow › System Folders
-                ui::inventory::hidden_folders::sync(&self.settings.inventory.hidden_system_folders);
+                ui::inventory::hidden_folders::sync(
+                    &self.settings.inventory.hidden_system_folders,
+                    self.settings.inventory.hide_empty_folders,
+                );
                 if demo_autohide.chat_start && ctx.cumulative_frame_nr() == 300 {
                     self.chat_ui.input = "Hello!".into();
                     self.chat_ui.focus_request = true;

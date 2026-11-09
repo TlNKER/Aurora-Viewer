@@ -340,6 +340,10 @@ fn additional_button(ui: &mut egui::Ui, p: &Palette, st: &mut InventoryUi) {
     }
 }
 
+/// Afterglow: the toolbar keeps only "Collapse displayed folders" and
+/// "Expand displayed folders".
+const AFTERGLOW_TREE_BUTTONS_ONLY: bool = true;
+
 /// Direct counterparts of LLPanelMainInventory's collapse_btn / expand_btn.
 fn tree_buttons(ui: &mut egui::Ui, p: &Palette, st: &mut InventoryUi) {
     for (open, icon, tip) in [
@@ -383,6 +387,11 @@ pub(super) fn search_row(
 ) {
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing.x = 6.0;
+        // Afterglow: only the collapse and expand buttons
+        if AFTERGLOW_TREE_BUTTONS_ONLY {
+            tree_buttons(ui, p, st);
+            return;
+        }
         let lit = st.filters_open || st.filters.active();
         if tool_button(ui, p, "adjustments-horizontal-filled", filters_tip(st), lit).clicked() {
             st.filters_open = !st.filters_open;
@@ -446,6 +455,17 @@ pub(super) fn explorer_row(
 ) {
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 8.0;
+        // Afterglow: the breadcrumb (wide) and the collapse and expand buttons only
+        if AFTERGLOW_TREE_BUTTONS_ONLY {
+            if layout == Layout::Wide {
+                let crumbs = (ui.available_width() * 0.32).clamp(140.0, 380.0);
+                ui.allocate_ui_with_layout(Vec2::new(crumbs, BAR), egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                    breadcrumb(ui, p, inv, st)
+                });
+            }
+            tree_buttons(ui, p, st);
+            return;
+        }
         if layout == Layout::Wide {
             let crumbs = (ui.available_width() * 0.32).clamp(140.0, 380.0);
             ui.allocate_ui_with_layout(Vec2::new(crumbs, BAR), egui::Layout::left_to_right(egui::Align::Center), |ui| {

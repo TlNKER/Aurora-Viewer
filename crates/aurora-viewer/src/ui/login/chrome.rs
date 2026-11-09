@@ -9,7 +9,15 @@ use crate::ui::{
 };
 use egui::{Context, Id, Rect, RichText, Vec2};
 
+/// Afterglow: the login screen without its sidebar, community links and
+/// version text.
+const AFTERGLOW_BARE: bool = true;
+
 pub fn sidebar(ctx: &Context, p: &Palette, icons: &Icons, info: &LoginInfo, card: Rect, width: f32, lowest: f32) -> bool {
+    // Afterglow: no Version and News panels on the login screen
+    if AFTERGLOW_BARE {
+        return false;
+    }
     let left = ctx.content_rect().right() - 32.0 - width;
     egui::Area::new(Id::unique("login_news"))
         .fixed_pos(egui::pos2(left, card.top()))
@@ -59,6 +67,8 @@ pub fn footer(ctx: &Context, p: &Palette, icons: &Icons, info: &LoginInfo, sideb
             }
         });
     }
+    // Afterglow: no "Join the community" text and buttons at the bottom left
+    if !AFTERGLOW_BARE {
     egui::Area::new(Id::unique("login_links"))
         .anchor(egui::Align2::LEFT_BOTTOM, Vec2::new(25.0, -20.0))
         .show(ctx, |ui| {
@@ -101,7 +111,9 @@ pub fn footer(ctx: &Context, p: &Palette, icons: &Icons, info: &LoginInfo, sideb
                 }
             });
         });
-    if screen.width() < 1100.0 {
+    }
+    // Afterglow: no version text in the corners either
+    if screen.width() < 1100.0 && !AFTERGLOW_BARE {
         egui::Area::new(Id::unique("login_footer_version"))
             .anchor(egui::Align2::RIGHT_BOTTOM, Vec2::new(-25.0, -59.0))
             .show(ctx, |ui| version(ui, p));
@@ -135,7 +147,7 @@ pub fn footer(ctx: &Context, p: &Palette, icons: &Icons, info: &LoginInfo, sideb
         .show(ctx, |ui| {
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = 14.0;
-                if screen.width() >= 1100.0 {
+                if screen.width() >= 1100.0 && !AFTERGLOW_BARE {
                     version(ui, p);
                 }
                 if widgets::action_button(
