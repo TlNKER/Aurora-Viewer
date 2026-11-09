@@ -27,6 +27,10 @@ pub(super) fn height(ctx: &egui::Context, conversation: Option<uuid::Uuid>) -> f
 }
 
 /// The volume of what we say in the nearby chat.
+
+/// Afterglow: the box without its emoji button and its whisper / say /
+/// shout menu.
+const AFTERGLOW_SLIM_COMPOSE: bool = true;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum Volume {
     Whisper,
@@ -129,11 +133,14 @@ pub(super) fn show(
                     ui.set_min_height(BOX_H - 8.0);
                     ui.horizontal_centered(|ui| {
                         ui.spacing_mut().item_spacing.x = 4.0;
-                        let b = box_button(ui, p, "mood-smile-filled", aurora_i18n::tr!("ui-chat-emoji"), st.emoji_open);
-                        emoji_btn = Some(b.rect);
-                        if b.clicked() {
-                            st.emoji_open = !st.emoji_open;
-                            st.gif_open = false;
+                        // Afterglow: no emoji button (":smile:" codes still work)
+                        if !AFTERGLOW_SLIM_COMPOSE {
+                            let b = box_button(ui, p, "mood-smile-filled", aurora_i18n::tr!("ui-chat-emoji"), st.emoji_open);
+                            emoji_btn = Some(b.rect);
+                            if b.clicked() {
+                                st.emoji_open = !st.emoji_open;
+                                st.gif_open = false;
+                            }
                         }
                         // shown once a key is entered (Preferences › Chat › GIFs)
                         if st.gifs.usable() {
@@ -143,7 +150,11 @@ pub(super) fn show(
                         // narrow, only its icon. An IM has no attach button:
                         // inventory is given by dropping it on the
                         // conversation, which says so during the drag (#627)
-                        if kind.is_none() {
+                        // Afterglow: no whisper / say / shout menu: always say
+                        // (Ctrl+Enter still shouts, Shift+Enter whispers)
+                        if AFTERGLOW_SLIM_COMPOSE {
+                            st.volume = Volume::Say;
+                        } else if kind.is_none() {
                             volume_button(ui, p, st, roomy);
                         }
                         // the right end first: what it takes fixes the field's width

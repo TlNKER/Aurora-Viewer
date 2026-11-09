@@ -40,6 +40,11 @@ pub enum Kind {
     Web,
 }
 
+/// Afterglow: the search's only chips.
+const AFTERGLOW_CHIPS: [Kind; 3] = [Kind::People, Kind::Places, Kind::Groups];
+/// Afterglow: no Web chip either.
+const AFTERGLOW_NO_WEB: bool = true;
+
 /// The sections of "All", in the order of the chips.
 const SECTIONS: [Tab; 5] = [Tab::People, Tab::Places, Tab::Events, Tab::Groups, Tab::Classifieds];
 /// Rows of a section of "All" before its "See all".
@@ -50,6 +55,7 @@ const ASKS_PER_FRAME: usize = 6;
 const DETAILS_W: f32 = 372.0;
 
 impl Kind {
+    #[allow(dead_code)] // Afterglow: AFTERGLOW_CHIPS instead
     const CHIPS: [Kind; 7] = [
         Kind::All,
         Kind::People,
@@ -465,13 +471,23 @@ impl SearchUi {
         // Counts and translated labels can exceed the minimum width. Wrap
         // whole chips, including Web, so every directory stays reachable.
         let mut picked = None;
+        // Afterglow: only People, Places and Groups (no All, Events,
+        // Classifieds, Land sales or Web); a window opened on another one
+        // shows People
+        if !AFTERGLOW_CHIPS.contains(&self.aurora.kind) {
+            self.aurora.kind = Kind::People;
+            self.aurora.selected = None;
+        }
         ui.horizontal_wrapped(|ui| {
             ui.spacing_mut().item_spacing.x = 4.0;
-            for kind in Kind::CHIPS {
+            for kind in AFTERGLOW_CHIPS {
                 let count = self.chip_count(&world.search, kind);
                 if widgets::pill_tab(ui, p, kind.icon(), kind.label(), count, false, self.aurora.kind == kind, true).clicked() {
                     picked = Some(kind);
                 }
+            }
+            if AFTERGLOW_NO_WEB {
+                return;
             }
             let web_chip = widgets::pill_tab(
                 ui,

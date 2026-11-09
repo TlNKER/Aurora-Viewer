@@ -301,7 +301,24 @@ impl World {
             // inventory_offer_handler: local system chat and IMSystemMessageTip
             // are independent; either enables UISndInventoryOffer, once.
             if self.inventory_offers.auto_accept_chat {
-                self.system_notice(text.clone(), super::notice_topics::Topic::Items);
+                // Afterglow: a resident's gift is noted in the conversation
+                // with them (opened, unread), not in the nearby chat
+                let from = im.from_agent_id;
+                let resident = im.dialog == super::notifications::im::INVENTORY_OFFERED
+                    && !im.from_group
+                    && !from.is_nil()
+                    && from != self.agent_id;
+                if resident && self.rlva_can_start_im(from) {
+                    if !im.from_name.is_empty() {
+                        self.social.names.entry(from).or_insert_with(|| im.from_name.clone());
+                    }
+                    self.social.session_mut(from);
+                    let line = self.notice_line(text.clone());
+                    self.conversation_card(from, line);
+                    self.social.afterglow_open_im = Some(from);
+                } else {
+                    self.system_notice(text.clone(), super::notice_topics::Topic::Items);
+                }
             }
             if self.inventory_offers.auto_accept_notify {
                 self.notifications

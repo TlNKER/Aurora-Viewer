@@ -435,6 +435,8 @@ pub enum Action {
     Beacons,
     PropertyLines,
     LandOwners,
+    /// Afterglow: About Land (Alt+N).
+    AboutLand,
     HideParticles,
     /// Aurora's Dev Toolbox window (Ctrl+Alt+D).
     DevToolbox,
@@ -640,6 +642,7 @@ pub fn sections() -> &'static Vec<(&'static str, Vec<(Action, &'static str)>)> {
                     (Action::Beacons, aurora_i18n::tr!("beacons-title")),
                     (Action::PropertyLines, aurora_i18n::tr!("world-property-lines")),
                     (Action::LandOwners, aurora_i18n::tr!("world-land-owners")),
+                    (Action::AboutLand, aurora_i18n::tr!("common-about-land")),
                     (Action::HideParticles, aurora_i18n::tr!("world-hide-particles")),
                 ],
             ),
@@ -796,6 +799,8 @@ impl KeyBindings {
             ),
             (Action::ToggleMic, [None, None]),
             (Action::Conversations, [kmod(K::KeyT, true, false), None]),
+            // Afterglow: Alt+N opens About Land
+            (Action::AboutLand, [kalt(K::KeyN, false, false), None]),
             (Action::People, [kmod(K::KeyA, true, true), None]),
             // menu_viewer.xml: Friends, Groups, Contact Sets
             (Action::Friends, [kmod(K::KeyF, true, true), None]),

@@ -4640,6 +4640,8 @@ impl App {
                 self.settings.world_overlays.land_owners = !self.settings.world_overlays.land_owners;
                 self.settings.save();
             }
+            // Afterglow: Alt+N, as World › About Land
+            Action::AboutLand => self.panels.about_land = true,
             Action::HideParticles => {
                 self.settings.world_overlays.hide_particles = !self.settings.world_overlays.hide_particles;
                 self.settings.save();
@@ -15666,6 +15668,11 @@ impl App {
                     inv.double_click_add_objects = true;
                     inv.double_click_add_clothes = true;
                     self.settings.save();
+                }
+                // Afterglow: a gift noted in the giver's conversation opens it
+                if let Some(session) = self.world.social.afterglow_open_im.take() {
+                    self.world.social.focus_im = Some(session);
+                    ui::notifications::open_conversations(&self.egui_ctx, &mut self.panels.chat);
                 }
                 // Afterglow: Preferences › Afterglow › System Folders
                 ui::inventory::hidden_folders::sync(

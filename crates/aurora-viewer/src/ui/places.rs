@@ -283,6 +283,11 @@ pub struct PlacesUi {
     /// Inventory changes asked from a menu, sent with the window's actions.
     pending_edits: Vec<aurora_net::inventory::operations::Mutation>,
     raise: bool,
+    /// Afterglow: the window was open last frame (an opening puts the
+    /// keyboard in the search field).
+    afterglow_was_open: bool,
+    /// Afterglow: the search field takes the keyboard at its next drawing.
+    afterglow_focus_search: bool,
 }
 
 impl PlacesUi {
@@ -329,6 +334,11 @@ impl PlacesUi {
     ) -> Vec<PlacesAction> {
         let mut actions = Vec::new();
         self.show_confirm(ctx, c.p, confirm_teleports, &mut actions);
+        // Afterglow: opening the window puts the keyboard in its search
+        if *open && !self.afterglow_was_open {
+            self.afterglow_focus_search = true;
+        }
+        self.afterglow_was_open = *open;
         if !*open {
             self.aurora.pending_click = None;
             return actions;
@@ -455,11 +465,14 @@ impl PlacesUi {
             ui.spacing_mut().item_spacing.x = 3.0;
             let buttons = if history { 2.0 } else { 4.0 };
             let w = (ui.available_width() - buttons * 25.0).max(60.0);
-            ui.add(
+            let field = ui.add(
                 egui::TextEdit::singleline(&mut self.filter)
                     .hint_text(aurora_i18n::tr!("ui-places-filter-places"))
                     .desired_width(w),
             );
+            if std::mem::take(&mut self.afterglow_focus_search) {
+                field.request_focus();
+            }
             widgets::icon_menu(ui, p, "settings-filled", aurora_i18n::tr!("ui-places-show-options"), |ui| {
                 if history {
                     self.history_item_menu(ui, p, world, actions);

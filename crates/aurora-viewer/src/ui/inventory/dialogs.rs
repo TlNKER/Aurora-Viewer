@@ -27,6 +27,22 @@ pub(super) fn show(
         }
         return;
     }
+    // Afterglow: deleting to the Trash needs no confirmation (deleting for
+    // good from the Trash still asks)
+    if let EditDialog::Delete(ids, false) = &dialog {
+        if st.pending.is_some() {
+            st.dialog = Some(dialog);
+            return;
+        }
+        let plan = rules::system(inv, 14)
+            .ok_or_else(|| aurora_i18n::tr!("common-trash-folder-not-found").to_owned())
+            .and_then(|to| rules::move_selection(inv, ids, to, &prefs.protected, &facts.worn));
+        match plan {
+            Ok(change) => actions.push(InvAction::Edit(change)),
+            Err(reason) => st.message = reason,
+        }
+        return;
+    }
     if let EditDialog::ReplaceLinks(picker) = &mut dialog {
         if super::replace_links::show(ctx, p, icons, inv, st, prefs, facts, picker, actions) {
             st.dialog = Some(dialog);
@@ -905,7 +921,8 @@ fn animation(
 ) {
     if st.animation_description.as_ref().is_none_or(|(id, _)| *id != it.id) {
         st.animation_description = Some((it.id, it.desc.clone()));
-        st.animation_details = true;
+        // Afterglow: opens collapsed, without the statistics
+        st.animation_details = false;
     }
     let mut open = true;
     Floater::new(

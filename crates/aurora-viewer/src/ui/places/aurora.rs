@@ -536,7 +536,10 @@ impl PlacesUi {
         tb.spacing_mut().item_spacing.x = 10.0;
         let sort_w = widgets::action_button_fit(&tb, "arrows-sort", self.sort_label(env.sort)) + 18.0;
         let w = (tb.available_width() - sort_w - 10.0).max(80.0);
-        widgets::pills::search_box(&mut tb, p, &mut self.filter, aurora_i18n::tr!("ui-places-search"), w);
+        let field = widgets::pills::search_box(&mut tb, p, &mut self.filter, aurora_i18n::tr!("ui-places-search"), w);
+        if std::mem::take(&mut self.afterglow_focus_search) {
+            field.request_focus();
+        }
         self.sort_button(&mut tb, p, c.world, env.sort, actions);
 
         let body = Rect::from_min_max(Pos2::new(full.left(), bar.bottom()), full.max);
@@ -1460,7 +1463,12 @@ impl PlacesUi {
         }
         let w = ui.available_width();
         // in a row: the field takes the height of its line only
-        ui.horizontal(|ui| widgets::pills::search_box(ui, p, &mut self.filter, aurora_i18n::tr!("ui-places-search-short"), w));
+        let field = ui
+            .horizontal(|ui| widgets::pills::search_box(ui, p, &mut self.filter, aurora_i18n::tr!("ui-places-search-short"), w))
+            .inner;
+        if std::mem::take(&mut self.afterglow_focus_search) {
+            field.request_focus();
+        }
         ui.add_space(8.0);
         // the three tabs
         let favorites = model::favorites(cat, env.favorites).len();

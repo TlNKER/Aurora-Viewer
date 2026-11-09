@@ -261,6 +261,18 @@ pub(super) fn scroll(
     }
     // The ancestors of a revealed row open until it is shown.
     st.plain.open_all(st.reveal_path.iter().copied());
+    // Afterglow: the Trash closes when something lands in it
+    if let Some(trash) = crate::world::inventory::actions::system(inv, 14)
+        && let Some(f) = inv.folders.get(&trash)
+    {
+        let count = f.items.len() + f.children.len();
+        let key = egui::Id::unique(("afterglow_trash_count", st.ui_id));
+        let before = ui.ctx().data(|d| d.get_temp::<usize>(key));
+        if before.is_some_and(|b| count > b) {
+            st.plain.set_open(trash, false);
+        }
+        ui.ctx().data_mut(|d| d.insert_temp(key, count));
+    }
     st.plain.prepare(&st.view, inv, root, show_root, prefs.show_library);
     let navigated = keyboard::navigate(ui, inv, st, false);
     for id in &st.plain.listed_open {
