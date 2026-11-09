@@ -15658,6 +15658,15 @@ impl App {
                 let demo_autohide = if self.demo { ui::bars::demo::get() } else { Default::default() };
                 let autohide_chat_bar = self.settings.autohide_chat_bar || demo_autohide.autohide;
                 self.chat_ui.autohide = autohide_chat_bar;
+                // Afterglow: settings saved before the double-click's Add
+                // default take it once
+                if !self.settings.inventory.afterglow_add_default {
+                    let inv = &mut self.settings.inventory;
+                    inv.afterglow_add_default = true;
+                    inv.double_click_add_objects = true;
+                    inv.double_click_add_clothes = true;
+                    self.settings.save();
+                }
                 // Afterglow: Preferences › Afterglow › System Folders
                 ui::inventory::hidden_folders::sync(
                     &self.settings.inventory.hidden_system_folders,

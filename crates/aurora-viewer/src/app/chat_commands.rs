@@ -35,7 +35,7 @@ impl App {
     /// FSCommon::report_cmdline_result: a line in the local chat, also
     /// whispered on the announce channel when that option is on.
     /// Afterglow: `/zoffset…` changes the hover height like its slider
-    /// (leaving the automatic height), then says the new height.
+    /// (leaving the automatic height), silently; `/zoffset` alone says it.
     fn z_offset(&mut self, change: crate::cmdline::ZOffset) {
         use crate::cmdline::ZOffset;
         if !self.world.hover_height_available() || !self.world.hover_height.ready() {
@@ -55,8 +55,11 @@ impl App {
             self.world.hover_height.preview(target);
             self.world.hover_height.commit();
         }
-        let shown = self.world.hover_height.value();
-        self.report_command(format!("Z-offset: {shown:+.2} m"));
+        // only `/zoffset` alone says the height; a change is silent
+        if change == ZOffset::Show {
+            let shown = self.world.hover_height.value();
+            self.report_command(format!("Z-offset: {shown:+.2} m"));
+        }
     }
 
     fn report_command(&mut self, text: impl Into<String>) {

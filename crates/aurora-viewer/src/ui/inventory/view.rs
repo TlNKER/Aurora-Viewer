@@ -364,6 +364,10 @@ pub struct InventoryPreferences {
     pub separate_searches: bool,
     pub double_click_add_objects: bool,
     pub double_click_add_clothes: bool,
+    /// Afterglow: the double-click's Add default has been put into settings
+    /// saved before it (once). Missing from such settings: false.
+    #[serde(default)]
+    pub afterglow_add_default: bool,
     pub filter_defaults: Filters,
     /// Received, Recent, Worn and Favorites keep their own finder defaults.
     /// The existing filter_defaults setting remains the main inventory's.
@@ -416,8 +420,10 @@ impl Default for InventoryPreferences {
             show_hover_tooltips: false,
             thumbnail_tooltips: true,
             separate_searches: false,
-            double_click_add_objects: false,
-            double_click_add_clothes: false,
+            // Afterglow: a double-click adds rather than wears
+            double_click_add_objects: true,
+            double_click_add_clothes: true,
+            afterglow_add_default: true,
             filter_defaults: Filters::default(),
             tab_filter_defaults: Default::default(),
             last_logout: 0,
