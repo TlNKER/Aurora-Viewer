@@ -472,8 +472,14 @@ const FILLED: &[(&str, &[u8])] = svg_list!(
     "zoom-scan",
 );
 
-/// Brand SVGs (white wolf silhouette of assets/branding/), drawn untinted or tinted.
-const BRAND_SVGS: &[(&str, &[u8])] = &[("wolf", include_bytes!("../../../../assets/branding/aurora-logo-white.svg"))];
+/// Brand SVGs of assets/branding/, drawn untinted or tinted. (Afterglow: the
+/// menu logo is a PNG now, see BRAND_PNGS.)
+const BRAND_SVGS: &[(&str, &[u8])] = &[];
+
+/// Afterglow: the white menu logo (top-left of the bars), still named "wolf"
+/// so every place that draws it keeps working. Cropped to its content and
+/// scaled down smoothly to the wolf's raster size.
+const BRAND_PNGS: &[(&str, &[u8])] = &[("wolf", include_bytes!("../../../../assets/branding/afterglow-logo-white.png"))];
 
 /// Raster images kept as PNG (brand logo).
 const PNGS: &[(&str, &[u8])] = &[("phoenix_18", include_bytes!("../../assets/icons/phoenix_18.png"))];
@@ -831,6 +837,21 @@ fn center_on_content(ci: egui::ColorImage) -> egui::ColorImage {
     out
 }
 
+/// A square image scaled down to `px` (Lanczos), so it stays smooth when
+/// drawn small without mipmaps.
+fn downscale(ci: egui::ColorImage, px: u32) -> egui::ColorImage {
+    let [w, h] = ci.size;
+    if w as u32 <= px && h as u32 <= px {
+        return ci;
+    }
+    let raw: Vec<u8> = ci.pixels.iter().flat_map(|c| c.to_srgba_unmultiplied()).collect();
+    let Some(img) = image::RgbaImage::from_raw(w as u32, h as u32, raw) else {
+        return ci;
+    };
+    let small = image::imageops::resize(&img, px, px, image::imageops::FilterType::Lanczos3);
+    egui::ColorImage::from_rgba_unmultiplied([px as usize, px as usize], small.as_raw())
+}
+
 fn decode_png(bytes: &[u8]) -> Option<egui::ColorImage> {
     let img = image::load_from_memory(bytes).ok()?.to_rgba8();
     let (w, h) = img.dimensions();
@@ -859,6 +880,11 @@ impl Icons {
         }
         for (name, bytes) in BRAND_SVGS {
             if let Some(ci) = rasterize_svg(bytes, BRAND_RASTER_PX).map(center_on_content) {
+                map.insert((*name).to_owned(), ctx.load_texture(*name, ci, opts));
+            }
+        }
+        for (name, bytes) in BRAND_PNGS {
+            if let Some(ci) = decode_png(bytes).map(center_on_content).map(|ci| downscale(ci, BRAND_RASTER_PX)) {
                 map.insert((*name).to_owned(), ctx.load_texture(*name, ci, opts));
             }
         }

@@ -117,6 +117,10 @@ pub struct Updater {
 }
 
 pub fn checks_enabled() -> bool {
+    // Afterglow: official Aurora releases would replace this build.
+    if !cfg!(test) {
+        return false;
+    }
     std::env::var_os("AURORA_DEMO").is_none()
         && (aurora_updater::test_environment().is_some()
             || (env!("AURORA_BUILD_PROFILE") == "release" && published_version(aurora_version::version())))

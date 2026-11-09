@@ -74,7 +74,7 @@ fn dictionaries() {
 /// release must not ship without its icon again.
 fn windows_resources() {
     let manifest = std::env::var("CARGO_MANIFEST_DIR").expect("Cargo supplies CARGO_MANIFEST_DIR");
-    let icon = Path::new(&manifest).join("../../assets/branding/aurora.ico");
+    let icon = Path::new(&manifest).join("../../assets/branding/afterglow.ico");
     println!("cargo:rerun-if-changed={}", icon.display());
 
     let display = std::env::var("DEP_AURORA_VERSION_DISPLAY").expect("aurora-version's build script supplies the version");
@@ -88,9 +88,9 @@ fn windows_resources() {
 
     let mut res = winresource::WindowsResource::new();
     res.set_icon(&icon.to_string_lossy())
-        .set("ProductName", "Aurora Viewer")
-        .set("FileDescription", "Aurora Viewer")
-        .set("OriginalFilename", "aurora-viewer.exe")
+        .set("ProductName", "Afterglow")
+        .set("FileDescription", "Afterglow")
+        .set("OriginalFilename", "Afterglow.exe")
         .set("ProductVersion", &display)
         .set("FileVersion", &display)
         .set_version_info(winresource::VersionInfo::PRODUCTVERSION, packed)
