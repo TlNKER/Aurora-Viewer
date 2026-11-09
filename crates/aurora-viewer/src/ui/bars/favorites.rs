@@ -530,6 +530,7 @@ pub fn menu_body(ui: &mut egui::Ui, p: &Palette, icons: &Icons, view: &View, out
 
 /// The Favorites button of the place island (F1): the icon alone, at every
 /// width, and its menu.
+#[allow(dead_code)] // Afterglow: the Favorites button is hidden
 pub fn place_button(ui: &mut egui::Ui, p: &Palette, icons: &Icons, rect: Rect, view: &View) -> Option<BarAction> {
     let resp = ui.interact(rect, Id::unique("bars_place_favorites"), Sense::click());
     let open = egui::Popup::is_id_open(ui.ctx(), egui::Popup::default_response_id(&resp));
@@ -555,6 +556,7 @@ pub fn place_button(ui: &mut egui::Ui, p: &Palette, icons: &Icons, rect: Rect, v
 
 /// The width of the place island's Favorites button: the icon, then its
 /// caret.
+#[allow(dead_code)] // Afterglow: the Favorites button is hidden
 pub const PLACE_BUTTON_W: f32 = 6.0 + ICON + 6.0 + CARET + 6.0;
 const CARET: f32 = 12.0;
 

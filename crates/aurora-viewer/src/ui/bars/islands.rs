@@ -108,6 +108,7 @@ pub(super) fn icon_slot(ui: &mut egui::Ui, p: &Palette, icons: &Icons, rect: Rec
 /// `icon_slot` whose left click may be greyed (an RLVa restriction) while
 /// its right-click menu stays: the response, and whether it was clicked
 /// while enabled.
+#[allow(dead_code)] // Afterglow: home button hidden
 pub(super) fn icon_slot_greyable(
     ui: &mut egui::Ui,
     p: &Palette,
@@ -270,9 +271,8 @@ pub fn top(
     // the bug report in an island of its own after the wolf's (the human's
     // request: in one island the two read as one button); hidden, the place
     // follows the wolf 8 px away
-    let bug_rect = st
-        .show_bug_report
-        .then(|| row(screen, menu_rect.right() + MARGIN, menu_rect.right() + MARGIN + PAD * 2.0 + SLOT));
+    // Afterglow: no bug report pill
+    let bug_rect: Option<Rect> = None;
     let span = row(screen, bug_rect.unwrap_or(menu_rect).right() + MARGIN, right);
     let (place_rect, detail) = super::place::layout(ui, st, span);
 

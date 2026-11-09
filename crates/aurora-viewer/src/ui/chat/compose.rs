@@ -185,10 +185,8 @@ pub(super) fn show(
                         }
                         let has_text = !draft.trim().is_empty();
                         send_clicked = send_button(ui, p, has_text).clicked() && has_text;
-                        output
-                            .response
-                            .response
-                            .on_hover_text(aurora_i18n::tr!("ui-chat-compose-shortcuts"))
+                        // Afterglow: no shortcuts tooltip over the input box
+                        output.response.response
                     })
                     .inner
                 });

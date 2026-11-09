@@ -9,7 +9,7 @@
 //! (`Settings::place_bar_stretch`); what it shows follows the room it has
 //! (`choose`).
 
-use super::islands::{GAP, ICON, PAD, SLOT, demo_open, icon_slot, icon_slot_greyable, slot_face, slot_ink};
+use super::islands::{GAP, ICON, PAD, SLOT, demo_open, slot_face, slot_ink};
 use super::{BarAction, StarAction, StatusInfo, paint_icon};
 use crate::theme::Palette;
 use crate::ui::Panels;
@@ -145,6 +145,14 @@ fn one_line(name: &str) -> String {
         .join(" ")
 }
 
+/// Afterglow: the rights shown in the pill - voice, flying, building and
+/// scripts only (the place's menu still lists them all).
+const PILL_RIGHTS: &[&str] = &["microphone-filled", "plane-tilt-filled", "box", "code"];
+
+fn pill_rights(st: &StatusInfo) -> Vec<ParcelIcon> {
+    st.parcel_icons.iter().filter(|it| PILL_RIGHTS.contains(&it.icon)).cloned().collect()
+}
+
 /// The widths of the levels for this frame.
 fn measure(ui: &egui::Ui, st: &StatusInfo) -> Widths {
     let (parcel, region, position) = texts(st);
@@ -158,23 +166,19 @@ fn measure(ui: &egui::Ui, st: &StatusInfo) -> Widths {
     } else {
         width(format!("{region} {steady}"), FontId::proportional(12.0))
     };
-    // the Favorites button, when the favourites live in the place island
-    let favorites = if st.favorites.access == crate::settings::FavoritesAccess::Menu {
-        super::favorites::PLACE_BUTTON_W + GAP
-    } else {
-        0.0
-    };
-    let buttons = PAD + SLOT * 3.0 + favorites + SLOT + GAP * 4.0 + PAD;
+    // Afterglow: no back / forward / home / Favorites buttons, only the star
+    let buttons = PAD + SLOT + GAP + PAD;
     let place = LOC_LEFT + BADGE + LOC_GAP + LOC_GAP + LOC_GAP * 2.0 + LOC_RIGHT;
-    let icons = rights_width(ui, &st.parcel_icons, Detail::Bare);
-    let rights_gap = if st.parcel_icons.is_empty() { 0.0 } else { LOC_GAP };
+    let rights = pill_rights(st);
+    let icons = rights_width(ui, &rights, Detail::Bare);
+    let rights_gap = if rights.is_empty() { 0.0 } else { LOC_GAP };
     Widths {
         fixed: buttons + place + icons + rights_gap,
         parcel: width(parcel, parcel_font(ui.ctx())),
         region: region_w,
         region_position: with_position,
-        forbidden_names: rights_width(ui, &st.parcel_icons, Detail::ForbiddenNamed) - icons,
-        all_names: rights_width(ui, &st.parcel_icons, Detail::AllNamed) - icons,
+        forbidden_names: rights_width(ui, &rights, Detail::ForbiddenNamed) - icons,
+        all_names: rights_width(ui, &rights, Detail::AllNamed) - icons,
     }
 }
 
@@ -217,55 +221,9 @@ pub fn island(
         ui.ctx().data_mut(|d| d.insert_temp(id, open));
     }
 
-    let mut x = rect.left() + PAD;
-    let mut next = |w: f32| {
-        let r = Rect::from_min_size(Pos2::new(x, top), Vec2::new(w, SLOT));
-        x += w + GAP;
-        r
-    };
-    // back / forward through the teleport history, home
-    // (held down or right clicked: the session's places)
-    for (left, dest) in [(true, st.tp_back.as_deref()), (false, st.tp_forward.as_deref())] {
-        let id = Id::unique(("bars_place_arrow", left));
-        let icon = if left { "arrow-left" } else { "arrow-right" };
-        let resp = icon_slot(ui, p, icons, next(SLOT), id, icon, dest.is_some());
-        let resp = resp.on_hover_text(super::arrow_tip(left, dest, st));
-        if left {
-            demo_open(ui.ctx(), &resp, super::demo::Open::TpList);
-        }
-        let (clicked, chosen) = super::tp_list::arrow(ui, p, &resp, st, Some((egui::RectAlign::BOTTOM_START, 10.0)));
-        if clicked && dest.is_some() {
-            action = Some(if left {
-                BarAction::TeleportBack
-            } else {
-                BarAction::TeleportForward
-            });
-        }
-        if chosen.is_some() {
-            action = chosen;
-        }
-    }
-    let (home, go) = icon_slot_greyable(
-        ui,
-        p,
-        icons,
-        next(SLOT),
-        Id::unique("bars_place_home"),
-        "home-filled",
-        st.can_go_home,
-    );
-    let home = home.on_hover_text(aurora_i18n::tr!("common-go-home"));
-    if go {
-        action = Some(BarAction::TeleportHome);
-    }
-    if super::home_menu(&home, p, st.can_set_home) {
-        action = Some(BarAction::SetHome);
-    }
-    if st.favorites.access == crate::settings::FavoritesAccess::Menu
-        && let Some(a) = super::favorites::place_button(ui, p, icons, next(super::favorites::PLACE_BUTTON_W), st.favorites)
-    {
-        action = Some(a);
-    }
+    // Afterglow: the back / forward arrows, home and Favorites buttons are
+    // hidden (still in the place's menu: history, home, Places)
+    let x = rect.left() + PAD;
 
     // the place, then the star at the right end
     let star = Rect::from_min_size(Pos2::new(rect.right() - PAD - SLOT, top), Vec2::splat(SLOT));
@@ -373,7 +331,8 @@ fn place(
     let cy = rect.center().y;
 
     // from the right: the rights
-    let rights_w = rights_width(ui, &st.parcel_icons, detail);
+    let rights = pill_rights(st);
+    let rights_w = rights_width(ui, &rights, detail);
     let rights_left = rect.right() - LOC_RIGHT - rights_w;
 
     // from the left: the badge, the parcel, the region
@@ -406,7 +365,7 @@ fn place(
 
     // the rights: each one says what it is; a click opens About Land
     let mut rx = rights_left;
-    for (i, it) in st.parcel_icons.iter().enumerate() {
+    for (i, it) in rights.iter().enumerate() {
         let w = right_width(ui, it, detail);
         let slot = Rect::from_min_size(Pos2::new(rx, cy - SLOT_HEIGHT / 2.0), Vec2::new(w, SLOT_HEIGHT));
         rx += w + RIGHT_GAP;
