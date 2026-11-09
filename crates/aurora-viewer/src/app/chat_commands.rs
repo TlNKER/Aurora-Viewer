@@ -34,6 +34,31 @@ impl App {
 
     /// FSCommon::report_cmdline_result: a line in the local chat, also
     /// whispered on the announce channel when that option is on.
+    /// Afterglow: `/zoffset…` changes the hover height like its slider
+    /// (leaving the automatic height), then says the new height.
+    fn z_offset(&mut self, change: crate::cmdline::ZOffset) {
+        use crate::cmdline::ZOffset;
+        if !self.world.hover_height_available() || !self.world.hover_height.ready() {
+            self.report_command(aurora_i18n::tr!("hover-height-unavailable"));
+            return;
+        }
+        let now = self.world.hover_height.value();
+        let target = match change {
+            ZOffset::By(by) => now + by,
+            ZOffset::Set(to) => to,
+            ZOffset::Show => now,
+        };
+        if change != ZOffset::Show {
+            if std::mem::replace(&mut self.settings.auto_hover_height, false) {
+                self.settings.save();
+            }
+            self.world.hover_height.preview(target);
+            self.world.hover_height.commit();
+        }
+        let shown = self.world.hover_height.value();
+        self.report_command(format!("Z-offset: {shown:+.2} m"));
+    }
+
     fn report_command(&mut self, text: impl Into<String>) {
         let text = text.into();
         let s = &self.settings.chat_commands;
@@ -88,6 +113,8 @@ impl App {
                 }
             }
             Command::Unavailable(text) => self.report_command(text),
+            // Afterglow: the Z-offset is the hover height, as in Firestorm
+            Command::ZOffset(change) => self.z_offset(change),
             Command::TeleportLocal { x, y, z } => {
                 let z = z.unwrap_or(self.world.agent.position.z);
                 self.teleport_in_region(Vec3::new(x, y, z));

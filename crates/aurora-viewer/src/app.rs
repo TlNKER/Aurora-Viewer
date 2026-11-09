@@ -4658,7 +4658,20 @@ impl App {
             Action::DoubleClickTeleport => self.toggle_double_click_teleport(),
             Action::Rebake => self.rebake(),
             Action::StopAnimations => self.stop_animations(false),
-            Action::ResyncAnimations => self.scene.resync_animations(Instant::now()),
+            Action::ResyncAnimations => {
+                self.scene.resync_animations(Instant::now());
+                // Afterglow: Ctrl+S also steps the AO to its next pose (its
+                // Next button) for the state playing, standing before any
+                let account = self.settings.ao.accounts.get(&self.world.agent_id);
+                if let Some(account) = account
+                    && account.enabled
+                    && !self.ao_runtime.paused
+                    && let Some(set) = self.ao_catalog.selected(account.selected)
+                {
+                    let state = self.ao_runtime.current.unwrap_or(crate::ao::State::Standing);
+                    self.ao_runtime.step(set, state, true);
+                }
+            }
             Action::RefreshAttachments => self.refresh_attachments(),
             Action::PhotoWindow => ui::widgets::toggle_floater(&self.egui_ctx, ui::snapshot::WINDOW, &mut self.panels.snapshot),
             Action::PhotoToDisk => self.photo_to_disk(),

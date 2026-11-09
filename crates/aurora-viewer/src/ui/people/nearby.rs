@@ -346,14 +346,17 @@ fn list_part(
     }
     let filter = st.filter.trim().to_lowercase();
     let list = radar::rows(world, data, &filter);
-    summary(
-        ui,
-        p,
-        data.radar.total,
-        list.iter().filter(|r| r.range.is_some_and(|d| d <= chat_ranges().say)).count(),
-        list.iter().filter(|r| r.friend).count(),
-    );
-    ui.add_space(if compact { 4.0 } else { 3.0 });
+    // Afterglow: no "N near you · N within earshot · N friends" line
+    if !AFTERGLOW_NO_SUMMARY {
+        summary(
+            ui,
+            p,
+            data.radar.total,
+            list.iter().filter(|r| r.range.is_some_and(|d| d <= chat_ranges().say)).count(),
+            list.iter().filter(|r| r.friend).count(),
+        );
+        ui.add_space(if compact { 4.0 } else { 3.0 });
+    }
     let order: Vec<Uuid> = list.iter().map(|r| r.id).collect();
     let by_range = Column::ALL.get(data.settings.sort as usize) == Some(&Column::Range);
     let now = ui.input(|i| i.time);
@@ -533,6 +536,9 @@ fn choose_sort(data: &mut RadarData, column: Column) {
         data.settings.sort_descending = false;
     }
 }
+
+/// Afterglow: the Near you tab without its summary line.
+const AFTERGLOW_NO_SUMMARY: bool = true;
 
 /// "16 near you · 7 within earshot · 2 friends": the figures in the ink,
 /// their words in the muted color.
