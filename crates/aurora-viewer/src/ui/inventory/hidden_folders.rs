@@ -22,6 +22,7 @@ pub const HIDEABLE: &[(&str, Option<i32>)] = &[
     ("Current Outfit", Some(46)),
     ("Favorites", Some(23)),
     ("Landmarks", Some(3)),
+    ("Marketplace Listings", Some(53)),
     ("My Outfits", Some(48)),
     ("Notecards", Some(7)),
     ("Objects", Some(6)),

@@ -340,9 +340,19 @@ fn additional_button(ui: &mut egui::Ui, p: &Palette, st: &mut InventoryUi) {
     }
 }
 
-/// Afterglow: the toolbar keeps only "Collapse displayed folders" and
-/// "Expand displayed folders".
+/// Afterglow: the toolbar keeps only the settings menu (sorting, search
+/// mode, Inventory preferences), "Collapse displayed folders" and "Expand
+/// displayed folders".
 const AFTERGLOW_TREE_BUTTONS_ONLY: bool = true;
+
+/// Afterglow: the sort button and its menu, which ends with Inventory
+/// preferences.
+fn settings_button(ui: &mut egui::Ui, p: &Palette, st: &mut InventoryUi, prefs: &mut InventoryPreferences, layout: Layout) {
+    let sort = tool_button(ui, p, "arrows-sort", aurora_i18n::tr!("inventory-sort-menu"), false);
+    menu::dropdown(&sort, p, egui::PopupCloseBehavior::CloseOnClick, |ui| {
+        sort_menu(ui, p, st, prefs, layout)
+    });
+}
 
 /// Direct counterparts of LLPanelMainInventory's collapse_btn / expand_btn.
 fn tree_buttons(ui: &mut egui::Ui, p: &Palette, st: &mut InventoryUi) {
@@ -387,8 +397,9 @@ pub(super) fn search_row(
 ) {
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing.x = 6.0;
-        // Afterglow: only the collapse and expand buttons
+        // Afterglow: only the settings (sort) menu and the collapse and expand buttons
         if AFTERGLOW_TREE_BUTTONS_ONLY {
+            settings_button(ui, p, st, prefs, layout);
             tree_buttons(ui, p, st);
             return;
         }
@@ -463,6 +474,7 @@ pub(super) fn explorer_row(
                     breadcrumb(ui, p, inv, st)
                 });
             }
+            settings_button(ui, p, st, prefs, layout);
             tree_buttons(ui, p, st);
             return;
         }
