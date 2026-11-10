@@ -449,6 +449,26 @@ impl SearchUi {
         let world = c.world;
         let access = world.agent_access();
         let mut find = false;
+        // Afterglow: Alt+Left / Alt+Right, the field having the keyboard,
+        // go to the previous / next of People, Places and Groups (taken
+        // before the field sees them; the field keeps the keyboard)
+        let mut stepped = None;
+        if self.afterglow_field.is_some_and(|id| ui.memory(|m| m.has_focus(id))) {
+            let step = ui.input_mut(|i| {
+                if i.consume_key(egui::Modifiers::ALT, egui::Key::ArrowRight) {
+                    1
+                } else if i.consume_key(egui::Modifiers::ALT, egui::Key::ArrowLeft) {
+                    -1
+                } else {
+                    0
+                }
+            });
+            if step != 0 {
+                let n = AFTERGLOW_CHIPS.len() as i32;
+                let at = AFTERGLOW_CHIPS.iter().position(|k| *k == self.aurora.kind).unwrap_or(0) as i32;
+                stepped = Some(AFTERGLOW_CHIPS[(at + step).rem_euclid(n) as usize]);
+            }
+        }
         // the field
         ui.horizontal(|ui| {
             let hint = if self.aurora.kind == Kind::Land {
@@ -458,6 +478,7 @@ impl SearchUi {
             };
             let clear = if self.aurora.text.is_empty() { 0.0 } else { 28.0 };
             let field = widgets::search_box(ui, p, &mut self.aurora.text, hint, ui.available_width() - clear);
+            self.afterglow_field = Some(field.id);
             if std::mem::take(&mut self.focus) {
                 field.request_focus();
             }
@@ -503,6 +524,7 @@ impl SearchUi {
                 picked = Some(Kind::Web);
             }
         });
+        let picked = stepped.or(picked);
         if let Some(kind) = picked.filter(|k| *k != self.aurora.kind) {
             self.aurora.kind = kind;
             self.aurora.selected = None;

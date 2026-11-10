@@ -580,6 +580,37 @@ pub(super) fn section_header(ui: &mut egui::Ui, p: &Palette, title: &str) {
     }
 }
 
+/// Afterglow: a section heading that folds its rows: a click on it, a
+/// triangle before the title (pointing right folded, down unfolded).
+pub(super) fn folding_header(ui: &mut egui::Ui, p: &Palette, title: &str, folded: bool) -> egui::Response {
+    let (rect, resp) = ui.allocate_exact_size(Vec2::new(ui.available_width(), BAND_H), Sense::click());
+    let resp = resp.on_hover_cursor(egui::CursorIcon::PointingHand);
+    let col = if resp.hovered() { p.muted } else { p.muted_dim };
+    let galley = ui.painter().layout_no_wrap(
+        title.to_uppercase(),
+        FontId::new(10.5, crate::ui::fonts::semibold(ui.ctx())),
+        col,
+    );
+    let y = rect.bottom() - 9.0;
+    // the triangle, 7 px, centred on the text's middle line
+    let c = egui::pos2(rect.left() + 6.0, y);
+    let tri = if folded {
+        vec![c + Vec2::new(-2.5, -3.5), c + Vec2::new(-2.5, 3.5), c + Vec2::new(3.0, 0.0)]
+    } else {
+        vec![c + Vec2::new(-3.5, -2.5), c + Vec2::new(3.5, -2.5), c + Vec2::new(0.0, 3.0)]
+    };
+    ui.painter().add(egui::Shape::convex_polygon(tri, col, egui::Stroke::NONE));
+    let w = galley.size().x;
+    let left = rect.left() + 14.0;
+    crate::ui::widgets::paint_row_text(ui.painter(), galley, left, y, col);
+    let from = left + w + 6.0;
+    if from < rect.right() {
+        ui.painter()
+            .hline(from..=rect.right(), y, egui::Stroke::new(1.0, p.raised.gamma_multiply(0.5)));
+    }
+    resp
+}
+
 /// The most badges a row can carry: blocked, friend, voice, typing,
 /// sitting, payment info, note.
 #[cfg(test)]

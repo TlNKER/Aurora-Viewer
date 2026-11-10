@@ -3061,6 +3061,14 @@ pub fn show(
         // can_tear_off in floater_fs_nearby_chat.xml does.
         floater = floater.action("external-link", aurora_i18n::tr!("common-detach"), &mut detach);
     }
+    // Afterglow: the column's collapse / expand button in the title bar,
+    // left of Detach (not in the column's head)
+    let mut column_clicked = false;
+    let column_narrow = st.layout_narrow.unwrap_or(false);
+    if style.workspace() {
+        let (icon, tip) = sidebar::column_button_look(st, column_narrow);
+        floater = floater.action(icon, tip, &mut column_clicked);
+    }
     popout::share(ctx, &st.popped);
     if style.workspace() {
         floater = floater.flush_body();
@@ -3253,6 +3261,9 @@ pub fn show(
     }
     if detach {
         actions.push(ConvAction::PopOut(st.selected));
+    }
+    if column_clicked {
+        sidebar::column_toggled(st, &mut actions, column_narrow);
     }
     // popped out or docked back from the title bar and the entries' menus;
     // a window popped out now draws from the next frame, the window above

@@ -316,29 +316,33 @@ pub(super) fn show(
     if AFTERGLOW_NO_SEARCH_ROW {
         st.side_filter.clear();
     }
-    let row = egui::vec2(ui.available_width(), SEARCH_H);
-    if rail {
-        // the rail's head: its button alone, over the pictures
-        let (row, _) = ui.allocate_exact_size(row, egui::Sense::hover());
-        column_toggle(
-            ui,
-            p,
-            st,
-            actions,
-            egui::Rect::from_center_size(row.center(), egui::Vec2::splat(SEARCH_H)),
-            narrow,
-        );
-    } else {
-        ui.allocate_ui_with_layout(row, egui::Layout::left_to_right(egui::Align::Center), |ui| {
-            ui.spacing_mut().item_spacing.x = 4.0;
-            let (button, _) = ui.allocate_exact_size(egui::Vec2::splat(SEARCH_H), egui::Sense::hover());
-            column_toggle(ui, p, st, actions, button, narrow);
-            if !AFTERGLOW_NO_SEARCH_ROW {
-                let width = (ui.available_width() - SEARCH_H - 4.0).max(40.0);
-                search_box(ui, p, &mut st.side_filter, width);
-                new_conversation(ui, p, world, st, actions);
-            }
-        });
+    // Afterglow: the column's button is in the window's title bar, so the
+    // head (button, search, "+") is not drawn at all
+    if !AFTERGLOW_NO_SEARCH_ROW {
+        let row = egui::vec2(ui.available_width(), SEARCH_H);
+        if rail {
+            // the rail's head: its button alone, over the pictures
+            let (row, _) = ui.allocate_exact_size(row, egui::Sense::hover());
+            column_toggle(
+                ui,
+                p,
+                st,
+                actions,
+                egui::Rect::from_center_size(row.center(), egui::Vec2::splat(SEARCH_H)),
+                narrow,
+            );
+        } else {
+            ui.allocate_ui_with_layout(row, egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                ui.spacing_mut().item_spacing.x = 4.0;
+                let (button, _) = ui.allocate_exact_size(egui::Vec2::splat(SEARCH_H), egui::Sense::hover());
+                column_toggle(ui, p, st, actions, button, narrow);
+                if !AFTERGLOW_NO_SEARCH_ROW {
+                    let width = (ui.available_width() - SEARCH_H - 4.0).max(40.0);
+                    search_box(ui, p, &mut st.side_filter, width);
+                    new_conversation(ui, p, world, st, actions);
+                }
+            });
+        }
     }
     ui.add_space(4.0);
     let filter = st.side_search().to_lowercase();
@@ -628,6 +632,33 @@ impl TwoEntries {
 /// (`ColumnChoice::by_hand`), plain while it follows the window, greyed out
 /// in a window too narrow for the column (`workspace::OPEN_FROM`). The rail
 /// ignores a search and keeps its text for the column (`ChatUi::side_search`).
+/// Afterglow: the column button's icon and tip in the title bar.
+pub(super) fn column_button_look(st: &ChatUi, narrow: bool) -> (&'static str, &'static str) {
+    let rail = st.column.rail(narrow);
+    let fits = st.layout_width.is_some_and(|w| w >= super::workspace::OPEN_FROM);
+    if rail && !fits {
+        ("layout-sidebar-left-expand-filled", aurora_i18n::tr!("ui-chat-column-no-room"))
+    } else if rail {
+        ("layout-sidebar-left-expand-filled", aurora_i18n::tr!("ui-chat-column-expand"))
+    } else {
+        ("layout-sidebar-left-collapse-filled", aurora_i18n::tr!("ui-chat-column-collapse"))
+    }
+}
+
+/// Afterglow: the title bar's column button clicked: as the column's own.
+pub(super) fn column_toggled(st: &mut ChatUi, actions: &mut Vec<ConvAction>, narrow: bool) {
+    let rail = st.column.rail(narrow);
+    let fits = st.layout_width.is_some_and(|w| w >= super::workspace::OPEN_FROM);
+    if rail && !fits {
+        return; // no room to open it: the button only says so
+    }
+    let was = st.column.collapsed;
+    st.column = st.column.toggled(narrow);
+    if st.column.collapsed != was {
+        actions.push(ConvAction::ColumnCollapsed(st.column.collapsed));
+    }
+}
+
 fn column_toggle(ui: &mut egui::Ui, p: &Palette, st: &mut ChatUi, actions: &mut Vec<ConvAction>, rect: egui::Rect, narrow: bool) {
     let rail = st.column.rail(narrow);
     let fits = st.layout_width.is_some_and(|w| w >= super::workspace::OPEN_FROM);

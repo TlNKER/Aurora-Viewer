@@ -17883,6 +17883,8 @@ impl App {
                 );
                 for wa in wm {
                     match wa {
+                        // Afterglow: the map's "Center map on my position"
+                        ui::worldmap::WorldMapAction::ClearBeacon => self.world.map.clear_track(),
                         ui::worldmap::WorldMapAction::TrackRegion(name) => {
                             self.region_tracker_ui.track_region(&self.world, name);
                             self.panels.region_tracker = true;

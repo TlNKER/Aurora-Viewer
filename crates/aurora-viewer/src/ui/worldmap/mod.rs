@@ -114,6 +114,9 @@ impl Default for WorldMapUi {
 
 pub enum WorldMapAction {
     TrackRegion(String),
+    /// Afterglow: "Center map on my position" also clears the beacon (the
+    /// tracked friend or place, on the map and in-world).
+    ClearBeacon,
     TeleportHome,
     TeleportLandmark(Uuid),
     /// A place of the history, by its global position: on another OpenSim
@@ -804,6 +807,7 @@ impl WorldMapUi {
             {
                 self.target_pan = Vec2::ZERO;
                 self.pan_tau = PAN_TAU_CENTER;
+                actions.push(WorldMapAction::ClearBeacon);
             }
             // LLFloaterWorldMap's Go Home button: greyed under RLVa @tplm + @tploc
             let home = ui
