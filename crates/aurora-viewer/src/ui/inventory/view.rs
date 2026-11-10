@@ -418,7 +418,9 @@ impl Default for InventoryPreferences {
             show_favorites: true,
             // off until a better hover card replaces it
             show_hover_tooltips: false,
-            thumbnail_tooltips: true,
+            // its own switch since #3008, off like the tooltips it used to
+            // live in, so nobody gets pictures they never asked for
+            thumbnail_tooltips: false,
             separate_searches: false,
             // Afterglow: a double-click adds rather than wears
             double_click_add_objects: true,
