@@ -114,7 +114,7 @@ impl Default for WorldMapUi {
 
 pub enum WorldMapAction {
     TrackRegion(String),
-    /// Afterglow: "Center map on my position" also clears the beacon (the
+    /// Highland: "Center map on my position" also clears the beacon (the
     /// tracked friend or place, on the map and in-world).
     ClearBeacon,
     TeleportHome,

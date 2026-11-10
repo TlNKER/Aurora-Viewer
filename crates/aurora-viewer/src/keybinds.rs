@@ -437,7 +437,7 @@ pub enum Action {
     ContactMarkers,
     PropertyLines,
     LandOwners,
-    /// Afterglow: About Land (Alt+N).
+    /// Highland: About Land (Alt+N).
     AboutLand,
     HideParticles,
     /// Aurora's Dev Toolbox window (Ctrl+Alt+D).
@@ -802,7 +802,7 @@ impl KeyBindings {
             ),
             (Action::ToggleMic, [None, None]),
             (Action::Conversations, [kmod(K::KeyT, true, false), None]),
-            // Afterglow: Alt+N opens About Land
+            // Highland: Alt+N opens About Land
             (Action::AboutLand, [kalt(K::KeyN, false, false), None]),
             (Action::People, [kmod(K::KeyA, true, true), None]),
             // menu_viewer.xml: Friends, Groups, Contact Sets

@@ -3,8 +3,10 @@
 //! the system credential store (Windows Credential Manager, protected by the
 //! user's session) instead of Firestorm's bin_conf.dat file.
 
-const SERVICE: &str = "Afterglow";
-const MFA_SERVICE: &str = "Afterglow MFA";
+const SERVICE: &str = "Highland";
+const MFA_SERVICE: &str = "Highland MFA";
+/// Highland: the store's name when the viewer was called Afterglow.
+const OLD_SERVICE: &str = "Afterglow";
 const MFA_LIFETIME: u64 = 30 * 24 * 60 * 60;
 
 /// Firestorm LLLoginInstance::saveMFAHash: separate protected map per user/grid.
@@ -174,7 +176,16 @@ pub fn load(grid: &str, username: &str) -> Option<String> {
     match e.get_password() {
         Ok(h) if is_hash(&h) => Some(h),
         Ok(_) => None,
-        Err(keyring::Error::NoEntry) => None,
+        // Highland: a password remembered by Afterglow (its earlier name)
+        // moves over once
+        Err(keyring::Error::NoEntry) => {
+            let old = service_entry(OLD_SERVICE, grid, username)?;
+            let h = old.get_password().ok().filter(|h| is_hash(h))?;
+            if e.set_password(&h).is_ok() {
+                let _ = old.delete_credential();
+            }
+            Some(h)
+        }
         Err(err) => {
             log::warn!("remembered password unreadable: {err}");
             None

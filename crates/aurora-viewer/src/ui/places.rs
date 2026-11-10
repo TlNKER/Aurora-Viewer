@@ -290,11 +290,11 @@ pub struct PlacesUi {
     /// AURORA_DEMO_PLACES=…:classic: the Legacy Viewer's tabs for this run,
     /// whatever Preferences › Aurora › Places says (not saved).
     pub demo_classic: bool,
-    /// Afterglow: the window was open last frame (an opening puts the
+    /// Highland: the window was open last frame (an opening puts the
     /// keyboard in the search field).
-    afterglow_was_open: bool,
-    /// Afterglow: the search field takes the keyboard at its next drawing.
-    afterglow_focus_search: bool,
+    highland_was_open: bool,
+    /// Highland: the search field takes the keyboard at its next drawing.
+    highland_focus_search: bool,
 }
 
 impl PlacesUi {
@@ -351,11 +351,11 @@ impl PlacesUi {
     ) -> Vec<PlacesAction> {
         let mut actions = Vec::new();
         self.show_confirm(ctx, c.p, confirm_teleports, &mut actions);
-        // Afterglow: opening the window puts the keyboard in its search
-        if *open && !self.afterglow_was_open {
-            self.afterglow_focus_search = true;
+        // Highland: opening the window puts the keyboard in its search
+        if *open && !self.highland_was_open {
+            self.highland_focus_search = true;
         }
-        self.afterglow_was_open = *open;
+        self.highland_was_open = *open;
         if !*open {
             self.aurora.pending_click = None;
             return actions;
@@ -495,7 +495,7 @@ impl PlacesUi {
                     .hint_text(aurora_i18n::tr!("ui-places-filter-places"))
                     .desired_width(w),
             );
-            if std::mem::take(&mut self.afterglow_focus_search) {
+            if std::mem::take(&mut self.highland_focus_search) {
                 field.request_focus();
             }
             widgets::icon_menu(ui, p, "settings-filled", aurora_i18n::tr!("ui-places-show-options"), |ui| {

@@ -29,9 +29,9 @@ pub(super) fn height(ctx: &egui::Context, conversation: Option<uuid::Uuid>, rece
 
 /// The volume of what we say in the nearby chat.
 
-/// Afterglow: the box without its emoji button and its whisper / say /
+/// Highland: the box without its emoji button and its whisper / say /
 /// shout menu.
-const AFTERGLOW_SLIM_COMPOSE: bool = true;
+const HIGHLAND_SLIM_COMPOSE: bool = true;
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub(super) enum Volume {
     Whisper,
@@ -138,8 +138,8 @@ pub(super) fn show(
                     ui.set_min_height(BOX_H - 8.0);
                     ui.horizontal_centered(|ui| {
                         ui.spacing_mut().item_spacing.x = 4.0;
-                        // Afterglow: no emoji button (":smile:" codes still work)
-                        if !AFTERGLOW_SLIM_COMPOSE {
+                        // Highland: no emoji button (":smile:" codes still work)
+                        if !HIGHLAND_SLIM_COMPOSE {
                             let b = box_button(ui, p, "mood-smile-filled", aurora_i18n::tr!("ui-chat-emoji"), st.emoji_open);
                             emoji_btn = Some(b.rect);
                             if b.clicked() {
@@ -155,9 +155,9 @@ pub(super) fn show(
                         // narrow, only its icon. An IM has no attach button:
                         // inventory is given by dropping it on the
                         // conversation, which says so during the drag (#627)
-                        // Afterglow: no whisper / say / shout menu: always say
+                        // Highland: no whisper / say / shout menu: always say
                         // (Ctrl+Enter still shouts, Shift+Enter whispers)
-                        if AFTERGLOW_SLIM_COMPOSE {
+                        if HIGHLAND_SLIM_COMPOSE {
                             st.volume = Volume::Say;
                         } else if kind.is_none() {
                             volume_button(ui, p, st, roomy);
@@ -201,7 +201,7 @@ pub(super) fn show(
                         }
                         let has_text = !draft.trim().is_empty();
                         send_clicked = send_button(ui, p, has_text).clicked() && has_text;
-                        // Afterglow: no shortcuts tooltip over the input box
+                        // Highland: no shortcuts tooltip over the input box
                         output.response.response
                     })
                     .inner

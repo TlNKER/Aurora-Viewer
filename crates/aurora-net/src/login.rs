@@ -10,7 +10,7 @@ use uuid::Uuid;
 pub const SL_MAIN_GRID: &str = "https://login.agni.lindenlab.com/cgi-bin/login.cgi";
 pub const SL_BETA_GRID: &str = "https://login.aditi.lindenlab.com/cgi-bin/login.cgi";
 
-pub const CHANNEL: &str = "Afterglow";
+pub const CHANNEL: &str = "Highland";
 
 #[derive(Debug, Clone)]
 pub enum StartLocation {

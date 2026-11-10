@@ -477,14 +477,14 @@ const FILLED: &[(&str, &[u8])] = svg_list!(
     "zoom-scan",
 );
 
-/// Brand SVGs of assets/branding/, drawn untinted or tinted. (Afterglow: the
+/// Brand SVGs of assets/branding/, drawn untinted or tinted. (Highland: the
 /// menu logo is a PNG now, see BRAND_PNGS.)
 const BRAND_SVGS: &[(&str, &[u8])] = &[];
 
-/// Afterglow: the white menu logo (top-left of the bars), still named "wolf"
+/// Highland: the white menu logo (top-left of the bars), still named "wolf"
 /// so every place that draws it keeps working. Cropped to its content and
 /// scaled down smoothly to the wolf's raster size.
-const BRAND_PNGS: &[(&str, &[u8])] = &[("wolf", include_bytes!("../../../../assets/branding/afterglow-logo-white.png"))];
+const BRAND_PNGS: &[(&str, &[u8])] = &[("wolf", include_bytes!("../../../../assets/branding/highland-logo-white.png"))];
 
 /// Raster images kept as PNG (brand logo).
 const PNGS: &[(&str, &[u8])] = &[("phoenix_18", include_bytes!("../../assets/icons/phoenix_18.png"))];

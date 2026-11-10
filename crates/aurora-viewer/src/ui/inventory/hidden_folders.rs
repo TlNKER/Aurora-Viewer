@@ -1,5 +1,5 @@
-//! Afterglow: system folders hidden from the inventory (Preferences ›
-//! Afterglow › System Folders), as Oasis's God Mode › Hidden System Folders
+//! Highland: system folders hidden from the inventory (Preferences ›
+//! Highland › System Folders), as Oasis's God Mode › Hidden System Folders
 //! (FSFloaterHiddenSystemFolders). A hidden folder only leaves the inventory
 //! windows' trees; it stays on the server with everything in it, and comes
 //! back as soon as it is ticked again.

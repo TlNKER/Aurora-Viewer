@@ -34,7 +34,7 @@ impl App {
 
     /// FSCommon::report_cmdline_result: a line in the local chat, also
     /// whispered on the announce channel when that option is on.
-    /// Afterglow: `/zoffset…` changes the hover height like its slider
+    /// Highland: `/zoffset…` changes the hover height like its slider
     /// (leaving the automatic height), silently; `/zoffset` alone says it.
     fn z_offset(&mut self, change: crate::cmdline::ZOffset) {
         use crate::cmdline::ZOffset;
@@ -116,7 +116,7 @@ impl App {
                 }
             }
             Command::Unavailable(text) => self.report_command(text),
-            // Afterglow: the Z-offset is the hover height, as in Firestorm
+            // Highland: the Z-offset is the hover height, as in Firestorm
             Command::ZOffset(change) => self.z_offset(change),
             Command::TeleportLocal { x, y, z } => {
                 let z = z.unwrap_or(self.world.agent.position.z);

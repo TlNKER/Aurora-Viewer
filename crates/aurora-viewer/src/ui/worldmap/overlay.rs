@@ -65,8 +65,8 @@ const FOLDER_LANDMARKS: i32 = 3;
 const FOLDER_TRASH: i32 = 14;
 const FOLDER_FAVORITES: i32 = 23;
 
-/// Afterglow: the map without its layers panel at the top right.
-const AFTERGLOW_NO_LAYERS: bool = true;
+/// Highland: the map without its layers panel at the top right.
+const HIGHLAND_NO_LAYERS: bool = true;
 
 fn search_id() -> egui::Id {
     egui::Id::unique("worldmap-search")
@@ -658,8 +658,8 @@ impl WorldMapUi {
         let fade = if dragging { 0.55 } else { 1.0 };
         let card = self.place_card(ui, p, world, tiles, cam, pictures, map, fade, actions);
         self.nav(ui, p, map, fade, world.rlva_can_teleport_home(), actions);
-        // Afterglow: no layers panel (People, For sale, Events…) at the top right
-        if !AFTERGLOW_NO_LAYERS {
+        // Highland: no layers panel (People, For sale, Events…) at the top right
+        if !HIGHLAND_NO_LAYERS {
             self.layers(ui, p, opts, map, fade);
         }
         if let Some(tab) = self.ov.drawer {
@@ -1601,7 +1601,7 @@ impl WorldMapUi {
         if me {
             self.target_pan = Vec2::ZERO;
             self.pan_tau = PAN_TAU_CENTER;
-            // Afterglow: and the beacon goes
+            // Highland: and the beacon goes
             actions.push(WorldMapAction::ClearBeacon);
         }
         if home {

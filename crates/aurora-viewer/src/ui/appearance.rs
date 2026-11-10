@@ -1736,7 +1736,7 @@ pub fn show(
                 );
             });
             let worn = aurora_i18n::tr!("ui-appearance-worn-38-attachments", count = format!("{}", count));
-            // Afterglow: no Outfit gallery tab, only Outfits and Worn (tabs
+            // Highland: no Outfit gallery tab, only Outfits and Worn (tabs
             // 1 and 2), opening on Outfits
             let mut shown = st.tab.clamp(1, 2) - 1;
             widgets::tabs(

@@ -350,10 +350,10 @@ pub struct InventoryPreferences {
     pub search_library: bool,
     pub search_outfits: bool,
     pub show_library: bool,
-    /// Afterglow: the system folders hidden from the trees, by the names of
-    /// `hidden_folders::HIDEABLE` (Preferences › Afterglow › System Folders).
+    /// Highland: the system folders hidden from the trees, by the names of
+    /// `hidden_folders::HIDEABLE` (Preferences › Highland › System Folders).
     pub hidden_system_folders: Vec<String>,
-    /// Afterglow: folders with no item anywhere inside (system folders too)
+    /// Highland: folders with no item anywhere inside (system folders too)
     /// are left out of the trees; on by default.
     pub hide_empty_folders: bool,
     pub show_recent: bool,
@@ -364,10 +364,10 @@ pub struct InventoryPreferences {
     pub separate_searches: bool,
     pub double_click_add_objects: bool,
     pub double_click_add_clothes: bool,
-    /// Afterglow: the double-click's Add default has been put into settings
+    /// Highland: the double-click's Add default has been put into settings
     /// saved before it (once). Missing from such settings: false.
-    #[serde(default)]
-    pub afterglow_add_default: bool,
+    #[serde(default, alias = "afterglow_add_default")]
+    pub highland_add_default: bool,
     pub filter_defaults: Filters,
     /// Received, Recent, Worn and Favorites keep their own finder defaults.
     /// The existing filter_defaults setting remains the main inventory's.
@@ -422,10 +422,10 @@ impl Default for InventoryPreferences {
             // live in, so nobody gets pictures they never asked for
             thumbnail_tooltips: false,
             separate_searches: false,
-            // Afterglow: a double-click adds rather than wears
+            // Highland: a double-click adds rather than wears
             double_click_add_objects: true,
             double_click_add_clothes: true,
-            afterglow_add_default: true,
+            highland_add_default: true,
             filter_defaults: Filters::default(),
             tab_filter_defaults: Default::default(),
             last_logout: 0,
@@ -568,10 +568,10 @@ pub struct ViewCache {
     children: IdMap<Vec<Uuid>>,
     result_children: IdMap<Vec<Uuid>>,
     folders: IdSet,
-    /// Afterglow: the root's folders that System Folders can hide, and
+    /// Highland: the root's folders that System Folders can hide, and
     /// their bit (`hidden_folders::folder_bit`).
     hideable: IdMap<u32>,
-    /// Afterglow: the folders that hold an item somewhere inside, or a
+    /// Highland: the folders that hold an item somewhere inside, or a
     /// folder not loaded yet (it may: it stays until its contents are known).
     filled: IdSet,
     /// A folder's date: its newest descendant's (see `prepare`).
@@ -686,7 +686,7 @@ impl ViewCache {
         self.folder_dates = dates;
         self.entries.par_sort_unstable_by(|a, b| compare(a, b, sort));
         self.folders = inv.folders.keys().copied().collect();
-        // Afterglow: each item, and each folder still loading, keeps its
+        // Highland: each item, and each folder still loading, keeps its
         // folder and the folders above it
         let mut filled = IdSet::default();
         let starts = inv
@@ -736,7 +736,7 @@ impl ViewCache {
 
     /// Changes whenever the sorted children change (see `prepare`).
     pub fn built(&self) -> u64 {
-        // Afterglow: a change of the hidden system folders lists the trees again
+        // Highland: a change of the hidden system folders lists the trees again
         self.built.wrapping_add(super::hidden_folders::generation().wrapping_mul(0x9E37_79B9_7F4A_7C15))
     }
 
@@ -759,9 +759,9 @@ impl ViewCache {
             .into_iter()
             .flatten()
             .filter(move |id| show_library || **id != lib_root)
-            // Afterglow: the system folders hidden in Preferences
+            // Highland: the system folders hidden in Preferences
             .filter(move |id| hidden == 0 || self.hideable.get(id).is_none_or(|b| hidden & (1u64 << b) == 0))
-            // Afterglow: empty folders, system folders included
+            // Highland: empty folders, system folders included
             .filter(move |id| !hide_empty || !self.folders.contains(*id) || self.filled.contains(*id))
             .copied()
     }

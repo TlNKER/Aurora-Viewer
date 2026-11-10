@@ -340,12 +340,12 @@ fn additional_button(ui: &mut egui::Ui, p: &Palette, st: &mut InventoryUi) {
     }
 }
 
-/// Afterglow: the toolbar keeps only the settings menu (sorting, search
+/// Highland: the toolbar keeps only the settings menu (sorting, search
 /// mode, Inventory preferences), "Collapse displayed folders" and "Expand
 /// displayed folders".
-const AFTERGLOW_TREE_BUTTONS_ONLY: bool = true;
+const HIGHLAND_TREE_BUTTONS_ONLY: bool = true;
 
-/// Afterglow: the sort button and its menu, which ends with Inventory
+/// Highland: the sort button and its menu, which ends with Inventory
 /// preferences.
 fn settings_button(ui: &mut egui::Ui, p: &Palette, st: &mut InventoryUi, prefs: &mut InventoryPreferences, layout: Layout) {
     let sort = tool_button(ui, p, "arrows-sort", aurora_i18n::tr!("inventory-sort-menu"), false);
@@ -397,8 +397,8 @@ pub(super) fn search_row(
 ) {
     ui.horizontal_wrapped(|ui| {
         ui.spacing_mut().item_spacing.x = 6.0;
-        // Afterglow: only the settings (sort) menu and the collapse and expand buttons
-        if AFTERGLOW_TREE_BUTTONS_ONLY {
+        // Highland: only the settings (sort) menu and the collapse and expand buttons
+        if HIGHLAND_TREE_BUTTONS_ONLY {
             settings_button(ui, p, st, prefs, layout);
             tree_buttons(ui, p, st);
             return;
@@ -466,8 +466,8 @@ pub(super) fn explorer_row(
 ) {
     ui.horizontal(|ui| {
         ui.spacing_mut().item_spacing.x = 8.0;
-        // Afterglow: the breadcrumb (wide) and the collapse and expand buttons only
-        if AFTERGLOW_TREE_BUTTONS_ONLY {
+        // Highland: the breadcrumb (wide) and the collapse and expand buttons only
+        if HIGHLAND_TREE_BUTTONS_ONLY {
             if layout == Layout::Wide {
                 let crumbs = (ui.available_width() * 0.32).clamp(140.0, 380.0);
                 ui.allocate_ui_with_layout(Vec2::new(crumbs, BAR), egui::Layout::left_to_right(egui::Align::Center), |ui| {

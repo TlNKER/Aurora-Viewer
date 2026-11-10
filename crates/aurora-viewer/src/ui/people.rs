@@ -260,9 +260,9 @@ pub(crate) const AURORA_SIZE: Vec2 = Vec2::new(520.0, 560.0);
 
 #[derive(Default)]
 pub struct PeopleUi {
-    /// Afterglow: the offline friends folded under their heading (a click
+    /// Highland: the offline friends folded under their heading (a click
     /// on "OFFLINE · N" folds or unfolds them).
-    pub afterglow_offline_folded: bool,
+    pub highland_offline_folded: bool,
     pub filter: String,
     pub friends_tab: usize,
     /// Object name typed in "Block by name".

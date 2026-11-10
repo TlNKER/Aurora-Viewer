@@ -145,7 +145,7 @@ fn one_line(name: &str) -> String {
         .join(" ")
 }
 
-/// Afterglow: the rights shown in the pill - voice, flying, building and
+/// Highland: the rights shown in the pill - voice, flying, building and
 /// scripts only (the place's menu still lists them all).
 const PILL_RIGHTS: &[&str] = &["microphone-filled", "plane-tilt-filled", "box", "code"];
 
@@ -166,7 +166,7 @@ fn measure(ui: &egui::Ui, st: &StatusInfo) -> Widths {
     } else {
         width(format!("{region} {steady}"), FontId::proportional(12.0))
     };
-    // Afterglow: no back / forward / home / Favorites buttons, only the star
+    // Highland: no back / forward / home / Favorites buttons, only the star
     let buttons = PAD + SLOT + GAP + PAD;
     let place = LOC_LEFT + BADGE + LOC_GAP + LOC_GAP + LOC_GAP * 2.0 + LOC_RIGHT;
     let rights = pill_rights(st);
@@ -221,7 +221,7 @@ pub fn island(
         ui.ctx().data_mut(|d| d.insert_temp(id, open));
     }
 
-    // Afterglow: the back / forward arrows, home and Favorites buttons are
+    // Highland: the back / forward arrows, home and Favorites buttons are
     // hidden (still in the place's menu: history, home, Places)
     let x = rect.left() + PAD;
 

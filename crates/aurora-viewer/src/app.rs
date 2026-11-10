@@ -322,7 +322,7 @@ const PAUSED_RESOLUTION_DIVISOR: u32 = 16;
 /// The wolf logo (window icon, login and loading screens, About, system
 /// notifications), read from the branding folder: one file for the viewer,
 /// the README and the exe icon.
-pub(crate) const LOGO_PNG: &[u8] = include_bytes!("../../../assets/branding/afterglow-logo.png");
+pub(crate) const LOGO_PNG: &[u8] = include_bytes!("../../../assets/branding/highland-logo.png");
 
 struct LogoData {
     ui: egui::ColorImage,
@@ -4645,7 +4645,7 @@ impl App {
             Action::ResetCameraAngles => self.reset_camera_angles(),
             Action::FocusSelection => self.look_at_selection(false),
             Action::ZoomSelection => self.look_at_selection(true),
-            // Afterglow: Enter opens the Conversations window (no chat bar)
+            // Highland: Enter opens the Conversations window (no chat bar)
             Action::Chat => self.chat_ui.open_conversations(&self.egui_ctx, &mut self.panels.chat),
             Action::ToggleMic => self.toggle_mic(),
             // the shortcuts of the windows, like their toolbar buttons: a
@@ -4705,7 +4705,7 @@ impl App {
                 self.settings.world_overlays.land_owners = !self.settings.world_overlays.land_owners;
                 self.settings.save();
             }
-            // Afterglow: Alt+N, as World › About Land
+            // Highland: Alt+N, as World › About Land
             Action::AboutLand => self.panels.about_land = true,
             Action::HideParticles => {
                 self.settings.world_overlays.hide_particles = !self.settings.world_overlays.hide_particles;
@@ -4727,7 +4727,7 @@ impl App {
             Action::StopAnimations => self.stop_animations(false),
             Action::ResyncAnimations => {
                 self.scene.resync_animations(Instant::now());
-                // Afterglow: Ctrl+S also steps the AO to its next pose (its
+                // Highland: Ctrl+S also steps the AO to its next pose (its
                 // Next button) for the state playing, standing before any
                 let account = self.settings.ao.accounts.get(&self.world.agent_id);
                 if let Some(account) = account
@@ -15873,21 +15873,21 @@ impl App {
                 let demo_autohide = if self.demo { ui::bars::demo::get() } else { Default::default() };
                 let autohide_chat_bar = self.settings.autohide_chat_bar || demo_autohide.autohide;
                 self.chat_ui.autohide = autohide_chat_bar;
-                // Afterglow: settings saved before the double-click's Add
+                // Highland: settings saved before the double-click's Add
                 // default take it once
-                if !self.settings.inventory.afterglow_add_default {
+                if !self.settings.inventory.highland_add_default {
                     let inv = &mut self.settings.inventory;
-                    inv.afterglow_add_default = true;
+                    inv.highland_add_default = true;
                     inv.double_click_add_objects = true;
                     inv.double_click_add_clothes = true;
                     self.settings.save();
                 }
-                // Afterglow: a gift noted in the giver's conversation opens it
-                if let Some(session) = self.world.social.afterglow_open_im.take() {
+                // Highland: a gift noted in the giver's conversation opens it
+                if let Some(session) = self.world.social.highland_open_im.take() {
                     self.world.social.focus_im = Some(session);
                     ui::notifications::open_conversations(&self.egui_ctx, &mut self.panels.chat);
                 }
-                // Afterglow: Preferences › Afterglow › System Folders
+                // Highland: Preferences › Highland › System Folders
                 ui::inventory::hidden_folders::sync(
                     &self.settings.inventory.hidden_system_folders,
                     self.settings.inventory.hide_empty_folders,
@@ -15896,10 +15896,10 @@ impl App {
                     self.chat_ui.input = "Hello!".into();
                     self.chat_ui.focus_request = true;
                 }
-                // Afterglow: no chat bar - a request for it (letter or
+                // Highland: no chat bar - a request for it (letter or
                 // gesture key, a draft) opens the nearby chat of the
                 // Conversations window, its text carried over
-                if ui::chat::AFTERGLOW_NO_CHAT_BAR && self.chat_ui.focus_request {
+                if ui::chat::HIGHLAND_NO_CHAT_BAR && self.chat_ui.focus_request {
                     self.chat_ui.focus_request = false;
                     let text = std::mem::take(&mut self.chat_ui.input);
                     self.chat_ui.open_nearby_with(&self.egui_ctx, &mut self.panels.chat, &text);
@@ -17883,7 +17883,7 @@ impl App {
                 );
                 for wa in wm {
                     match wa {
-                        // Afterglow: the map's "Center map on my position"
+                        // Highland: the map's "Center map on my position"
                         ui::worldmap::WorldMapAction::ClearBeacon => self.world.map.clear_track(),
                         ui::worldmap::WorldMapAction::TrackRegion(name) => {
                             self.region_tracker_ui.track_region(&self.world, name);

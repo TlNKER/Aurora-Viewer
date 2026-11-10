@@ -156,8 +156,8 @@ fn search_box(ui: &mut egui::Ui, p: &Palette, text: &mut String, width: f32) {
     );
 }
 
-/// Afterglow: the column without its search field and "+" button.
-const AFTERGLOW_NO_SEARCH_ROW: bool = true;
+/// Highland: the column without its search field and "+" button.
+const HIGHLAND_NO_SEARCH_ROW: bool = true;
 
 /// Height of the search field, and the side of the button beside it.
 const SEARCH_H: f32 = 30.0;
@@ -311,14 +311,14 @@ pub(super) fn show(
     let ui = &mut child;
     ui.spacing_mut().item_spacing.y = 2.0;
     ui.add_space(8.0);
-    // Afterglow: no "Search or start…" field and no "+" beside it (the
+    // Highland: no "Search or start…" field and no "+" beside it (the
     // column's new collapse button stays)
-    if AFTERGLOW_NO_SEARCH_ROW {
+    if HIGHLAND_NO_SEARCH_ROW {
         st.side_filter.clear();
     }
-    // Afterglow: the column's button is in the window's title bar, so the
+    // Highland: the column's button is in the window's title bar, so the
     // head (button, search, "+") is not drawn at all
-    if !AFTERGLOW_NO_SEARCH_ROW {
+    if !HIGHLAND_NO_SEARCH_ROW {
         let row = egui::vec2(ui.available_width(), SEARCH_H);
         if rail {
             // the rail's head: its button alone, over the pictures
@@ -336,7 +336,7 @@ pub(super) fn show(
                 ui.spacing_mut().item_spacing.x = 4.0;
                 let (button, _) = ui.allocate_exact_size(egui::Vec2::splat(SEARCH_H), egui::Sense::hover());
                 column_toggle(ui, p, st, actions, button, narrow);
-                if !AFTERGLOW_NO_SEARCH_ROW {
+                if !HIGHLAND_NO_SEARCH_ROW {
                     let width = (ui.available_width() - SEARCH_H - 4.0).max(40.0);
                     search_box(ui, p, &mut st.side_filter, width);
                     new_conversation(ui, p, world, st, actions);
@@ -632,7 +632,7 @@ impl TwoEntries {
 /// (`ColumnChoice::by_hand`), plain while it follows the window, greyed out
 /// in a window too narrow for the column (`workspace::OPEN_FROM`). The rail
 /// ignores a search and keeps its text for the column (`ChatUi::side_search`).
-/// Afterglow: the column button's icon and tip in the title bar.
+/// Highland: the column button's icon and tip in the title bar.
 pub(super) fn column_button_look(st: &ChatUi, narrow: bool) -> (&'static str, &'static str) {
     let rail = st.column.rail(narrow);
     let fits = st.layout_width.is_some_and(|w| w >= super::workspace::OPEN_FROM);
@@ -645,7 +645,7 @@ pub(super) fn column_button_look(st: &ChatUi, narrow: bool) -> (&'static str, &'
     }
 }
 
-/// Afterglow: the title bar's column button clicked: as the column's own.
+/// Highland: the title bar's column button clicked: as the column's own.
 pub(super) fn column_toggled(st: &mut ChatUi, actions: &mut Vec<ConvAction>, narrow: bool) {
     let rail = st.column.rail(narrow);
     let fits = st.layout_width.is_some_and(|w| w >= super::workspace::OPEN_FROM);

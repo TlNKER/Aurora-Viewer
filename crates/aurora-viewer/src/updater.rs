@@ -158,12 +158,12 @@ pub struct Updater {
     grace_until: Option<SystemTime>,
 }
 
-/// Afterglow: no "update required" (or its grace period) and no sign-in
+/// Highland: no "update required" (or its grace period) and no sign-in
 /// blocked for an update, whatever a release says.
-const AFTERGLOW_NEVER_REQUIRED: bool = !cfg!(test);
+const HIGHLAND_NEVER_REQUIRED: bool = !cfg!(test);
 
 pub fn checks_enabled() -> bool {
-    // Afterglow: official Aurora releases would replace this build.
+    // Highland: official Aurora releases would replace this build.
     if !cfg!(test) {
         return false;
     }
@@ -223,8 +223,8 @@ impl Updater {
     }
     /// The update is needed to sign in: below the minimum, grace over.
     pub fn required(&self) -> bool {
-        // Afterglow: no update is ever required, nothing blocks signing in
-        if AFTERGLOW_NEVER_REQUIRED {
+        // Highland: no update is ever required, nothing blocks signing in
+        if HIGHLAND_NEVER_REQUIRED {
             return false;
         }
         self.release.as_ref().is_some_and(|r| r.required) && self.grace_left().is_none()
@@ -232,7 +232,7 @@ impl Updater {
 
     /// Below the minimum, the time this version may still sign in.
     pub fn grace_left(&self) -> Option<Duration> {
-        if AFTERGLOW_NEVER_REQUIRED {
+        if HIGHLAND_NEVER_REQUIRED {
             return None;
         }
         self.grace_left_at(SystemTime::now())
@@ -263,14 +263,14 @@ impl Updater {
         }
     }
     pub fn blocks_login(&self) -> bool {
-        if AFTERGLOW_NEVER_REQUIRED {
+        if HIGHLAND_NEVER_REQUIRED {
             return false;
         }
         self.required() || self.policy_pending || matches!(self.state, State::Handoff)
     }
 
     pub fn login_block_reason(&self) -> Option<&'static str> {
-        if AFTERGLOW_NEVER_REQUIRED {
+        if HIGHLAND_NEVER_REQUIRED {
             return None;
         }
         if self.required() {

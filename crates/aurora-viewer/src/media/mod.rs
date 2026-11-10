@@ -530,7 +530,7 @@ impl Default for MediaManager {
 /// The user agent of the viewer's web requests (getCurrentUserAgent): the
 /// browsers' and the web profile's.
 pub fn user_agent() -> String {
-    format!("SecondLife (Afterglow {})", aurora_version::version())
+    format!("SecondLife (Highland {})", aurora_version::version())
 }
 
 /// The shared cache of our CEF browsers, in which the plugin creates

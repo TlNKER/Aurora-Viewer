@@ -227,7 +227,7 @@ impl Recovery {
                     .show(ui, |ui| {
                         ui.set_width(ui.available_width());
                         ui.horizontal_wrapped(|ui| {
-                            ui.label(RichText::new(format!("Afterglow {}", self.record.version)).strong());
+                            ui.label(RichText::new(format!("Highland {}", self.record.version)).strong());
                             ui.label(
                                 RichText::new(format!("· {} · {}", self.record.profile, self.record.language.to_uppercase()))
                                     .color(p.muted),

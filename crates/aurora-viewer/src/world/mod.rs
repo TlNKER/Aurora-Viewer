@@ -3240,7 +3240,7 @@ impl World {
                 self.tp_failed = false;
                 self.tp_progress = self.tp_progress.max(0.10);
                 self.tp_status = aurora_i18n::tr!("common-teleport-accepted").into();
-                // Afterglow: no "Teleporting…" line in the nearby chat
+                // Highland: no "Teleporting…" line in the nearby chat
                 None
             }
             NetEvent::TeleportFailed { reason } => {

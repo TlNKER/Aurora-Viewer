@@ -456,7 +456,7 @@ pub fn page(cx: &mut Cx, tab: usize) {
     }
 }
 
-/// Afterglow: Preferences › Afterglow › System Folders, Oasis's God Mode ›
+/// Highland: Preferences › Highland › System Folders, Oasis's God Mode ›
 /// Hidden System Folders: a switch per system folder, on when it shows in
 /// the inventory. A hidden folder leaves the inventory's trees only; it
 /// stays on the server with its contents (`ui/inventory/hidden_folders.rs`).

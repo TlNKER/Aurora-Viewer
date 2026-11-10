@@ -202,15 +202,15 @@ fn parse_fps_limit(value: &str) -> Option<u32> {
 /// The window title, ending with the build profile ("(Dev)", "(Release)",
 /// "(Debug)"): test windows of different builds can be told apart.
 pub fn window_title() -> String {
-    // Afterglow: just the name, no version or build profile
-    if AFTERGLOW_PLAIN_TITLE {
-        return "Afterglow".to_owned();
+    // Highland: just the name, no version or build profile
+    if HIGHLAND_PLAIN_TITLE {
+        return "Highland".to_owned();
     }
     title_with(get().title.as_deref(), env!("AURORA_BUILD_PROFILE"), aurora_version::version())
 }
 
-/// Afterglow: the window's title is only "Afterglow".
-const AFTERGLOW_PLAIN_TITLE: bool = true;
+/// Highland: the window's title is only "Highland".
+const HIGHLAND_PLAIN_TITLE: bool = true;
 
 /// The viewer's identity on the Linux desktop: Wayland app_id, X11
 /// WM_CLASS, and the name of `packaging/linux/aurora-viewer.desktop`, whose

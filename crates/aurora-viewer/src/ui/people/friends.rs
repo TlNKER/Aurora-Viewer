@@ -211,16 +211,16 @@ fn list(ui: &mut egui::Ui, c: &mut Ctx, data: &super::RadarData, st: &mut People
                         let title = aurora_i18n::tr!("people-friends-online", count = online as i64);
                         super::nearby::section_header(ui, c.p, &title);
                     } else {
-                        // Afterglow: "OFFLINE · N" folds and unfolds them
+                        // Highland: "OFFLINE · N" folds and unfolds them
                         let title = aurora_i18n::tr!("people-friends-offline", count = (all.len() - online) as i64);
-                        let folded = st.afterglow_offline_folded;
+                        let folded = st.highland_offline_folded;
                         if super::nearby::folding_header(ui, c.p, &title, folded).clicked() {
-                            st.afterglow_offline_folded = !folded;
+                            st.highland_offline_folded = !folded;
                         }
                     }
                 }
-                // Afterglow: folded offline friends are not listed
-                if sections && !line.friend.online && st.afterglow_offline_folded {
+                // Highland: folded offline friends are not listed
+                if sections && !line.friend.online && st.highland_offline_folded {
                     continue;
                 }
                 row(ui, c, data, st, line, &order);

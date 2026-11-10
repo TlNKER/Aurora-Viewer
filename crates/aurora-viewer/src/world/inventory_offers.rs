@@ -301,7 +301,7 @@ impl World {
             // inventory_offer_handler: local system chat and IMSystemMessageTip
             // are independent; either enables UISndInventoryOffer, once.
             if self.inventory_offers.auto_accept_chat {
-                // Afterglow: a resident's gift is noted in the conversation
+                // Highland: a resident's gift is noted in the conversation
                 // with them (opened, unread), not in the nearby chat
                 let from = im.from_agent_id;
                 let resident = im.dialog == super::notifications::im::INVENTORY_OFFERED
@@ -315,7 +315,7 @@ impl World {
                     self.social.session_mut(from);
                     let line = self.notice_line(text.clone());
                     self.conversation_card(from, line);
-                    self.social.afterglow_open_im = Some(from);
+                    self.social.highland_open_im = Some(from);
                 } else {
                     self.system_notice(text.clone(), super::notice_topics::Topic::Items);
                 }

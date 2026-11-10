@@ -12,7 +12,9 @@
 use aurora_assets::sealed::Key;
 use std::path::Path;
 
-const SERVICE: &str = "Afterglow cache";
+const SERVICE: &str = "Highland cache";
+/// Highland: the key's name when the viewer was called Afterglow.
+const OLD_SERVICE: &str = "Afterglow cache";
 const ACCOUNT: &str = "disk cache key v1";
 const FILE: &str = "cache.key";
 /// The credential store's entry of the key (service, account), for the
@@ -54,7 +56,19 @@ fn from_store() -> Option<Key> {
             Some(key) => return Some(key),
             None => log::warn!("cache key: the stored key is malformed, a new one replaces it"),
         },
-        Err(keyring::Error::NoEntry) => {}
+        Err(keyring::Error::NoEntry) => {
+            // Highland: the key Afterglow (its earlier name) kept moves over,
+            // so its cache stays readable
+            if let Some(key) = keyring::Entry::new(OLD_SERVICE, ACCOUNT)
+                .ok()
+                .and_then(|old| old.get_secret().ok())
+                .and_then(|b| parse(&b))
+                && entry.set_secret(key.as_bytes()).is_ok()
+            {
+                log::info!("cache key: taken over from Afterglow");
+                return Some(key);
+            }
+        }
         Err(e) => {
             log::warn!("cache key: credential store unreadable: {e}");
             return None;

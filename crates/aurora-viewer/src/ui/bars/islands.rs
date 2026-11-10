@@ -120,7 +120,7 @@ pub(super) fn icon_slot(ui: &mut egui::Ui, p: &Palette, icons: &Icons, rect: Rec
 /// `icon_slot` whose left click may be greyed (an RLVa restriction) while
 /// its right-click menu stays: the response, and whether it was clicked
 /// while enabled.
-#[allow(dead_code)] // Afterglow: home button hidden
+#[allow(dead_code)] // Highland: home button hidden
 pub(super) fn icon_slot_greyable(
     ui: &mut egui::Ui,
     p: &Palette,
@@ -283,14 +283,14 @@ pub fn top(
     // the bug report in an island of its own after the wolf's (the human's
     // request: in one island the two read as one button); hidden, the place
     // follows the wolf 8 px away
-    // Afterglow: no bug report pill
+    // Highland: no bug report pill
     let bug_rect: Option<Rect> = None;
     let span = row(screen, bug_rect.unwrap_or(menu_rect).right() + MARGIN, right);
     let (place_rect, detail) = super::place::layout(ui, st, span);
 
     // each island is an area of its own: the pointer over it is over the
     // interface (`Context::is_pointer_over_egui`), between them over the world
-    // Afterglow: the notifications (script dialogs, cards) reach from the
+    // Highland: the notifications (script dialogs, cards) reach from the
     // account island (the profile picture) to the bell, not only the clock's
     notif.column = Some(Rect::from_min_max(acc_rect.min, bell_rect.max));
     let bell_slot = Rect::from_center_size(bell_rect.center(), Vec2::splat(SLOT));

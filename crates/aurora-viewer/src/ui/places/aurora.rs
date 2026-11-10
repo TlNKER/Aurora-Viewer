@@ -570,7 +570,7 @@ impl PlacesUi {
         let sort_w = widgets::action_button_fit(&tb, "arrows-sort", self.sort_label(env.sort)) + 18.0;
         let w = (tb.available_width() - sort_w - 10.0).max(80.0);
         let field = widgets::pills::search_box(&mut tb, p, &mut self.filter, aurora_i18n::tr!("ui-places-search"), w);
-        if std::mem::take(&mut self.afterglow_focus_search) {
+        if std::mem::take(&mut self.highland_focus_search) {
             field.request_focus();
         }
         self.sort_button(&mut tb, p, c.world, env.sort, actions);
@@ -1499,7 +1499,7 @@ impl PlacesUi {
         let field = ui
             .horizontal(|ui| widgets::pills::search_box(ui, p, &mut self.filter, aurora_i18n::tr!("ui-places-search-short"), w))
             .inner;
-        if std::mem::take(&mut self.afterglow_focus_search) {
+        if std::mem::take(&mut self.highland_focus_search) {
             field.request_focus();
         }
         ui.add_space(8.0);

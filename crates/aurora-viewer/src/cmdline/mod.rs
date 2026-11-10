@@ -203,9 +203,9 @@ pub enum Command {
     Bandwidth(u32),
     /// A command Aurora can't do yet: said in the chat
     /// instead of sending the line.
-    #[allow(dead_code)] // Afterglow: /zoffset was its only user
+    #[allow(dead_code)] // Highland: /zoffset was its only user
     Unavailable(&'static str),
-    /// Afterglow: `/zoffset_up [m]`, `/zoffset_down [m]`, `/zoffset_reset`,
+    /// Highland: `/zoffset_up [m]`, `/zoffset_down [m]`, `/zoffset_reset`,
     /// `/zoffset [m]`: the avatar's Z-offset, which is its hover height.
     ZOffset(ZOffset),
     /// `key2name uuid`: tell the avatar name once known.
@@ -241,7 +241,7 @@ pub enum Command {
     PasteCamera(CameraSpec),
 }
 
-/// Afterglow: what a `/zoffset…` command does to the hover height.
+/// Highland: what a `/zoffset…` command does to the hover height.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ZOffset {
     /// Up (positive) or down by this many metres.
@@ -252,7 +252,7 @@ pub enum ZOffset {
     Show,
 }
 
-/// Afterglow: the step of `/zoffset_up` and `/zoffset_down` without a number.
+/// Highland: the step of `/zoffset_up` and `/zoffset_down` without a number.
 pub const ZOFFSET_STEP: f32 = 0.05;
 fn camera_parse_error() -> &'static str {
     aurora_i18n::tr!("cmdline-mod-invalid-camera-position-expected-x-y-z-or-x")
@@ -320,7 +320,7 @@ pub fn parse(text: &str, s: &ChatCommandSettings, mut roll: impl FnMut(u32) -> u
         "/touch" => return Some(i.uuid().map_or(Command::Report(Vec::new()), Command::Touch)),
         "/siton" => return Some(i.uuid().map_or(Command::Report(Vec::new()), Command::SitOn)),
         "/standup" => return Some(Command::StandUp),
-        // Afterglow: the Z-offset is the hover height
+        // Highland: the Z-offset is the hover height
         "/zoffset_up" => return Some(Command::ZOffset(ZOffset::By(i.float().unwrap_or(ZOFFSET_STEP).abs()))),
         "/zoffset_down" => return Some(Command::ZOffset(ZOffset::By(-i.float().unwrap_or(ZOFFSET_STEP).abs()))),
         "/zoffset_reset" => return Some(Command::ZOffset(ZOffset::Set(0.0))),

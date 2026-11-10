@@ -330,8 +330,8 @@ fn card_height(prefs: &InventoryPreferences) -> f32 {
     if prefs.show_details { details::STRIP } else { 0.0 }
 }
 
-/// Afterglow: the inventory window without its tabs.
-const AFTERGLOW_NO_TABS: bool = true;
+/// Highland: the inventory window without its tabs.
+const HIGHLAND_NO_TABS: bool = true;
 
 /// The narrow window: tabs, search, the tree, the selection's card.
 #[allow(clippy::too_many_arguments)]
@@ -346,16 +346,16 @@ fn compact(
     images: &std::collections::HashMap<Uuid, egui::TextureHandle>,
     actions: &mut Vec<InvAction>,
 ) {
-    // a folder window has no tabs. Afterglow: the main window neither,
+    // a folder window has no tabs. Highland: the main window neither,
     // always on the whole inventory
-    if st.scope.is_nil() && !AFTERGLOW_NO_TABS {
+    if st.scope.is_nil() && !HIGHLAND_NO_TABS {
         toolbar::tabs(ui, p, inv, st, prefs);
         ui.add_space(6.0);
     }
-    if AFTERGLOW_NO_TABS && st.tab != 0 {
+    if HIGHLAND_NO_TABS && st.tab != 0 {
         set_tab(st, prefs, 0);
     }
-    // Afterglow: no preview (details) of the selection at the bottom
+    // Highland: no preview (details) of the selection at the bottom
     prefs.show_details = false;
     toolbar::search_row(ui, p, inv, st, prefs, Layout::Compact, actions);
     ui.add_space(4.0);
@@ -413,7 +413,7 @@ fn explorer(
     toolbar::explorer_row(ui, p, inv, st, prefs, layout, actions);
     ui.add_space(8.0);
     let area = ui.available_rect_before_wrap();
-    prefs.show_details = false; // Afterglow: no preview pane
+    prefs.show_details = false; // Highland: no preview pane
     let pane_w = if layout == Layout::Wide && prefs.show_details { 300.0 } else { 0.0 };
     const GAP: f32 = 8.0;
     let side_w = columns::sidebar(ui, p, area, pane_w, layout, &mut prefs.explorer);

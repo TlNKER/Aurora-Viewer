@@ -136,9 +136,9 @@ pub struct SearchUi {
     events_day: i32,
     /// Give the keyboard to the tab's search field (window or tab opened).
     focus: bool,
-    /// Afterglow: the search field's id, for Alt+Left / Alt+Right while it
+    /// Highland: the search field's id, for Alt+Left / Alt+Right while it
     /// has the keyboard.
-    afterglow_field: Option<egui::Id>,
+    highland_field: Option<egui::Id>,
     /// The window was shown on the previous frame.
     was_open: bool,
     web: WebView,
@@ -173,7 +173,7 @@ impl Default for SearchUi {
             events_by_day: false,
             events_day: 0,
             focus: true,
-            afterglow_field: None,
+            highland_field: None,
             was_open: false,
             // the search page is loaded with the session: nothing of it
             // stays in the shared browser cache

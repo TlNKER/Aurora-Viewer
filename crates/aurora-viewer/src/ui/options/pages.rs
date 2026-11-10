@@ -36,7 +36,7 @@ pub fn tabs(page: Page) -> Vec<&'static str> {
             aurora_i18n::tr!("common-windows"),
             aurora_i18n::tr!("ui-options-tab-world-and-interface"),
             aurora_i18n::tr!("common-behavior"),
-            // Afterglow: Oasis's Hidden System Folders
+            // Highland: Oasis's Hidden System Folders
             "System Folders",
         ],
         Page::Graphics => vec![

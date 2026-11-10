@@ -715,7 +715,7 @@ pub fn show(
                     super::aurora_bg::radial_glow(&painter, r.center(), 150.0, p.violet, 0.42);
                 }
                 ui.add_space(2.0);
-                ui.label(RichText::new("Afterglow").size(34.0).strong().color(p.ink));
+                ui.label(RichText::new("Highland").size(34.0).strong().color(p.ink));
                 ui.label(RichText::new(client_tagline()).size(13.0).color(p.violet_pale));
                 ui.add_space(18.0);
             });
@@ -962,14 +962,14 @@ pub fn show(
             .rect;
         });
 
-    // ---- version + news (right). Afterglow: hidden, with the "Check for
+    // ---- version + news (right). Highland: hidden, with the "Check for
     // updates" button (no updater) and the footer's News button
-    const AFTERGLOW_NO_SIDEBAR: bool = true;
-    if wide && !AFTERGLOW_NO_SIDEBAR {
+    const HIGHLAND_NO_SIDEBAR: bool = true;
+    if wide && !HIGHLAND_NO_SIDEBAR {
         if chrome::sidebar(&ctx, p, icons, info, login_card, 330.0, lowest) {
             action = LoginAction::CheckUpdates;
         }
-    } else if info.can_check_updates && !AFTERGLOW_NO_SIDEBAR {
+    } else if info.can_check_updates && !HIGHLAND_NO_SIDEBAR {
         egui::Area::new(egui::Id::unique("login_check_updates"))
             // left of the accessibility button and the preferences cogwheel
             // of `chrome::footer`
@@ -984,7 +984,7 @@ pub fn show(
             });
     }
 
-    let chrome_action = chrome::footer(&ctx, p, icons, info, wide || AFTERGLOW_NO_SIDEBAR, form);
+    let chrome_action = chrome::footer(&ctx, p, icons, info, wide || HIGHLAND_NO_SIDEBAR, form);
     if !matches!(chrome_action, LoginAction::None) {
         action = chrome_action;
     }

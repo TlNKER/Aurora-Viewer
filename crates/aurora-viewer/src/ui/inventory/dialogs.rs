@@ -27,7 +27,7 @@ pub(super) fn show(
         }
         return;
     }
-    // Afterglow: deleting to the Trash needs no confirmation (deleting for
+    // Highland: deleting to the Trash needs no confirmation (deleting for
     // good from the Trash still asks)
     if let EditDialog::Delete(ids, false) = &dialog {
         if st.pending.is_some() {
@@ -921,7 +921,7 @@ fn animation(
 ) {
     if st.animation_description.as_ref().is_none_or(|(id, _)| *id != it.id) {
         st.animation_description = Some((it.id, it.desc.clone()));
-        // Afterglow: opens collapsed, without the statistics
+        // Highland: opens collapsed, without the statistics
         st.animation_details = false;
     }
     let mut open = true;

@@ -40,10 +40,10 @@ pub enum Kind {
     Web,
 }
 
-/// Afterglow: the search's only chips.
-const AFTERGLOW_CHIPS: [Kind; 3] = [Kind::People, Kind::Places, Kind::Groups];
-/// Afterglow: no Web chip either.
-const AFTERGLOW_NO_WEB: bool = true;
+/// Highland: the search's only chips.
+const HIGHLAND_CHIPS: [Kind; 3] = [Kind::People, Kind::Places, Kind::Groups];
+/// Highland: no Web chip either.
+const HIGHLAND_NO_WEB: bool = true;
 
 /// The sections of "All", in the order of the chips.
 const SECTIONS: [Tab; 5] = [Tab::People, Tab::Places, Tab::Events, Tab::Groups, Tab::Classifieds];
@@ -55,7 +55,7 @@ const ASKS_PER_FRAME: usize = 6;
 const DETAILS_W: f32 = 372.0;
 
 impl Kind {
-    #[allow(dead_code)] // Afterglow: AFTERGLOW_CHIPS instead
+    #[allow(dead_code)] // Highland: HIGHLAND_CHIPS instead
     const CHIPS: [Kind; 7] = [
         Kind::All,
         Kind::People,
@@ -449,11 +449,11 @@ impl SearchUi {
         let world = c.world;
         let access = world.agent_access();
         let mut find = false;
-        // Afterglow: Alt+Left / Alt+Right, the field having the keyboard,
+        // Highland: Alt+Left / Alt+Right, the field having the keyboard,
         // go to the previous / next of People, Places and Groups (taken
         // before the field sees them; the field keeps the keyboard)
         let mut stepped = None;
-        if self.afterglow_field.is_some_and(|id| ui.memory(|m| m.has_focus(id))) {
+        if self.highland_field.is_some_and(|id| ui.memory(|m| m.has_focus(id))) {
             let step = ui.input_mut(|i| {
                 if i.consume_key(egui::Modifiers::ALT, egui::Key::ArrowRight) {
                     1
@@ -464,9 +464,9 @@ impl SearchUi {
                 }
             });
             if step != 0 {
-                let n = AFTERGLOW_CHIPS.len() as i32;
-                let at = AFTERGLOW_CHIPS.iter().position(|k| *k == self.aurora.kind).unwrap_or(0) as i32;
-                stepped = Some(AFTERGLOW_CHIPS[(at + step).rem_euclid(n) as usize]);
+                let n = HIGHLAND_CHIPS.len() as i32;
+                let at = HIGHLAND_CHIPS.iter().position(|k| *k == self.aurora.kind).unwrap_or(0) as i32;
+                stepped = Some(HIGHLAND_CHIPS[(at + step).rem_euclid(n) as usize]);
             }
         }
         // the field
@@ -478,7 +478,7 @@ impl SearchUi {
             };
             let clear = if self.aurora.text.is_empty() { 0.0 } else { 28.0 };
             let field = widgets::search_box(ui, p, &mut self.aurora.text, hint, ui.available_width() - clear);
-            self.afterglow_field = Some(field.id);
+            self.highland_field = Some(field.id);
             if std::mem::take(&mut self.focus) {
                 field.request_focus();
             }
@@ -492,22 +492,22 @@ impl SearchUi {
         // Counts and translated labels can exceed the minimum width. Wrap
         // whole chips, including Web, so every directory stays reachable.
         let mut picked = None;
-        // Afterglow: only People, Places and Groups (no All, Events,
+        // Highland: only People, Places and Groups (no All, Events,
         // Classifieds, Land sales or Web); a window opened on another one
         // shows People
-        if !AFTERGLOW_CHIPS.contains(&self.aurora.kind) {
+        if !HIGHLAND_CHIPS.contains(&self.aurora.kind) {
             self.aurora.kind = Kind::People;
             self.aurora.selected = None;
         }
         ui.horizontal_wrapped(|ui| {
             ui.spacing_mut().item_spacing.x = 4.0;
-            for kind in AFTERGLOW_CHIPS {
+            for kind in HIGHLAND_CHIPS {
                 let count = self.chip_count(&world.search, kind);
                 if widgets::pill_tab(ui, p, kind.icon(), kind.label(), count, false, self.aurora.kind == kind, true).clicked() {
                     picked = Some(kind);
                 }
             }
-            if AFTERGLOW_NO_WEB {
+            if HIGHLAND_NO_WEB {
                 return;
             }
             let web_chip = widgets::pill_tab(

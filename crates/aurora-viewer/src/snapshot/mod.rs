@@ -379,7 +379,7 @@ pub fn default_folder() -> PathBuf {
     directories::UserDirs::new()
         .and_then(|d| d.picture_dir().map(Path::to_path_buf))
         .unwrap_or_else(|| crate::settings::config_dir().join("photos"))
-        .join("Afterglow")
+        .join("Highland")
 }
 
 /// Size of a photo: the preset's long side with the proportions, the

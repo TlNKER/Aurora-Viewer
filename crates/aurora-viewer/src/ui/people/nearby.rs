@@ -346,8 +346,8 @@ fn list_part(
     }
     let filter = st.filter.trim().to_lowercase();
     let list = radar::rows(world, data, &filter);
-    // Afterglow: no "N near you · N within earshot · N friends" line
-    if !AFTERGLOW_NO_SUMMARY {
+    // Highland: no "N near you · N within earshot · N friends" line
+    if !HIGHLAND_NO_SUMMARY {
         summary(
             ui,
             p,
@@ -533,8 +533,8 @@ fn choose_sort(data: &mut RadarData, column: Column) {
     }
 }
 
-/// Afterglow: the Near you tab without its summary line.
-const AFTERGLOW_NO_SUMMARY: bool = true;
+/// Highland: the Near you tab without its summary line.
+const HIGHLAND_NO_SUMMARY: bool = true;
 
 /// "16 near you · 7 within earshot · 2 friends": the figures in the ink,
 /// their words in the muted color.
@@ -580,7 +580,7 @@ pub(super) fn section_header(ui: &mut egui::Ui, p: &Palette, title: &str) {
     }
 }
 
-/// Afterglow: a section heading that folds its rows: a click on it, a
+/// Highland: a section heading that folds its rows: a click on it, a
 /// triangle before the title (pointing right folded, down unfolded).
 pub(super) fn folding_header(ui: &mut egui::Ui, p: &Palette, title: &str, folded: bool) -> egui::Response {
     let (rect, resp) = ui.allocate_exact_size(Vec2::new(ui.available_width(), BAND_H), Sense::click());
