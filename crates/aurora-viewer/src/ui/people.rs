@@ -209,6 +209,9 @@ pub struct FriendsSettings {
     pub pictures: bool,
     /// FriendsListShowPermissions: the rights each friend gave us.
     pub permissions: bool,
+    /// Highland: the offline friends folded under their heading (a click
+    /// on "OFFLINE · N" folds or unfolds them); kept between sessions.
+    pub highland_offline_folded: bool,
 }
 
 impl Default for FriendsSettings {
@@ -220,6 +223,7 @@ impl Default for FriendsSettings {
             sort: SORT_STATUS,
             pictures: true,
             permissions: true,
+            highland_offline_folded: false,
         }
     }
 }
@@ -260,9 +264,6 @@ pub(crate) const AURORA_SIZE: Vec2 = Vec2::new(520.0, 560.0);
 
 #[derive(Default)]
 pub struct PeopleUi {
-    /// Highland: the offline friends folded under their heading (a click
-    /// on "OFFLINE · N" folds or unfolds them).
-    pub highland_offline_folded: bool,
     pub filter: String,
     pub friends_tab: usize,
     /// Object name typed in "Block by name".

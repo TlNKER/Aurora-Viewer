@@ -41,6 +41,7 @@ pub mod group_data;
 pub mod group_money;
 pub mod groups;
 pub mod hand_ik;
+pub mod local_labels;
 pub mod home;
 pub mod hover_height;
 pub mod hud_lock;
@@ -690,6 +691,10 @@ pub struct World {
     /// The instant messages kept while offline were asked for (once per
     /// login).
     offline_im_requested: bool,
+    /// Highland: object chat that came before the block list was loaded,
+    /// shown (or not) once it is (`tick_social`), so a blocked worn object's
+    /// "Ready" at login stays out of nearby chat.
+    highland_held_object_chat: Vec<ChatMessage>,
     /// Which group titles the name tags show (from the settings).
     pub group_titles: names::GroupTitles,
     /// Whose shared portals are shown (from the settings, `portals::Sources`).
@@ -972,6 +977,7 @@ impl World {
             arrived_once: false,
             arrival_wait_since: None,
             offline_im_requested: false,
+            highland_held_object_chat: Vec::new(),
             group_titles: Default::default(),
             portal_sources: Default::default(),
             region_alerts: Default::default(),
@@ -4262,6 +4268,15 @@ impl World {
     }
 
     fn on_chat(&mut self, c: ChatMessage) {
+        // Highland: an object's chat waits for the block list
+        if blocking::HIGHLAND_HOLD_OBJECT_CHAT
+            && c.source_type == aurora_net::ChatSourceType::Object
+            && !self.mutes.is_loaded()
+            && self.highland_held_object_chat.len() < 500
+        {
+            self.highland_held_object_chat.push(c);
+            return;
+        }
         let controller_allowed = self.rlva_controller_chat_allowed(c.source_id);
         if c.source_type == aurora_net::ChatSourceType::Object
             && c.chat_type == aurora_net::ChatType::OwnerSay

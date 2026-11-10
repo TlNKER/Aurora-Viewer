@@ -35,6 +35,10 @@ const TEM_SHINY_MASK: u8 = 0xc0;
 /// (own_full_perm: permYouOwner, permModify, permTransfer, permCopy).
 const FULL_RIGHTS: u32 = OBJECT_YOU_OWNER | OBJECT_MODIFY | OBJECT_COPY | OBJECT_TRANSFER;
 
+/// Highland: a new prim gets the plain white "blank" texture on every face
+/// instead of plywood.
+const HIGHLAND_BLANK_NEW_PRIMS: bool = true;
+
 /// A face with the new objects' look.
 pub fn styled_face(face: &TextureFace, s: &BuildSettings) -> TextureFace {
     let [r, g, b, _] = s.new_prim_color;
@@ -80,6 +84,9 @@ impl BuildTool {
             let mut styled = te.clone();
             for face in styled.faces.iter_mut() {
                 *face = styled_face(face, s);
+                if HIGHLAND_BLANK_NEW_PRIMS {
+                    face.texture = aurora_prim::te::BLANK_TEXTURE;
+                }
             }
             o.te = Some(Arc::new(styled));
             o.material_dirty = true;

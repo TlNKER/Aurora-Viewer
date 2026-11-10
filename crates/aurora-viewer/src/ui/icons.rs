@@ -216,6 +216,8 @@ const OUTLINE: &[(&str, &[u8])] = svg_list!(
 /// Embedded Tabler filled icons, named `<Tabler name>-filled`.
 const FILLED: &[(&str, &[u8])] = svg_list!(
     "filled", "-filled":
+    // Highland: the Rubbish folder's own rounded bin (not a Tabler icon)
+    "rubbish",
     "accessible",
     "adjustments-horizontal",
     "archive",
@@ -553,7 +555,7 @@ const ALIASES: &[(&str, &str)] = &[
     ("Inv_CallingCard", "id-filled"),
     ("Inv_LinkItem", "link-filled"),
     ("Inv_LinkFolder", "link-filled"),
-    ("Inv_TrashClosed", "trash-filled"),
+    ("Inv_TrashClosed", "rubbish-filled"),
     ("Inv_SuitcaseClosed", "briefcase-filled"),
     ("Inv_SuitcaseOpen", "briefcase-filled"),
     ("Inv_SysClosed", "folder-filled"),

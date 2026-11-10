@@ -588,7 +588,9 @@ pub struct ViewCache {
 
 impl ViewCache {
     pub fn prepare(&mut self, inv: &Inventory, sort: Sort) {
-        let version = (inv.root, inv.lib_root, inv.generation, sort);
+        // Highland: a new local label renames its row and its place in the sort
+        let generation = inv.generation.wrapping_add(crate::world::local_labels::revision().wrapping_mul(0x9E37_79B9_7F4A_7C15));
+        let version = (inv.root, inv.lib_root, generation, sort);
         if self.version == Some(version) {
             return;
         }
@@ -643,11 +645,18 @@ impl ViewCache {
                 )
             })
             .chain(inv.items.par_iter().map(|(id, it)| {
+                // Highland: sorted and found by its local label, and still
+                // found by its own name
+                let name = match crate::world::local_labels::label(inv, *id) {
+                    Some(label) => format!("{label} {}", it.name).to_lowercase(),
+                    None => it.name.to_lowercase(),
+                };
+                let desc = it.desc.to_lowercase();
                 metadata(
                     *id,
                     it.parent,
-                    it.name.to_lowercase(),
-                    it.desc.to_lowercase(),
+                    name,
+                    desc,
                     it.created_at,
                     3,
                     false,

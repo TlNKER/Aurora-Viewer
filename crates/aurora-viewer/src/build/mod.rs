@@ -174,6 +174,9 @@ pub struct BuildSettings {
     pub rez_under_land_group: bool,
     /// New prim size (FSBuildPrefs_X/Y/Zsize).
     pub new_prim_size: [f32; 3],
+    /// Highland: settings saved before the 0.2 m default take it once.
+    #[serde(default)]
+    pub highland_small_prims: bool,
     /// New prim material (FSBuildPrefs_Material, LL_MCODE_WOOD).
     pub new_prim_material: u8,
     /// New prim colour (FSBuildPrefs_Color, white); its alpha is not used,
@@ -631,7 +634,9 @@ impl Default for BuildSettings {
             create_shape: 0,
             keep_tool: false,
             rez_under_land_group: true,
-            new_prim_size: [0.5; 3],
+            // Highland: 0.2 m on all sides (Firestorm's 0.5)
+            new_prim_size: [0.2; 3],
+            highland_small_prims: true,
             new_prim_material: 3,
             new_prim_color: [255; 4],
             new_prim_transparency: 0.0,

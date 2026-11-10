@@ -433,7 +433,7 @@ pub(super) fn show(
             let selected = st.tab == 0 && st.browse == row.id;
             let name = folder_name(inv, row.id);
             let icon = match tree::folder_icon(folder.info.type_default, row.open) {
-                "Inv_TrashClosed" => "trash-filled",
+                "Inv_TrashClosed" => "rubbish-filled",
                 "Inv_SuitcaseOpen" | "Inv_SuitcaseClosed" => "briefcase-filled",
                 "Inv_FolderOpen" => "folder-open-filled",
                 _ => "folder-filled",

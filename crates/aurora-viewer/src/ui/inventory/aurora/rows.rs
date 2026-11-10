@@ -403,10 +403,12 @@ pub(in super::super) fn item(
     // By human choice, names share the tag's semi-bold face and text colour.
     let active = pills.iter().any(|(_, tone)| *tone == Tone::Worn);
     let ink = if active { widgets::row_tag_ink(p, true) } else { p.ink };
+    // Highland: an item's local label in place of its name
+    let shown = crate::world::local_labels::label(inv, id).unwrap_or_else(|| it.name.clone());
     let name = if selected || active {
-        sheet::semibold(ui, &it.name, NAME, ink)
+        sheet::semibold(ui, &shown, NAME, ink)
     } else {
-        egui::text::LayoutJob::single_section(it.name.clone(), egui::TextFormat::simple(egui::FontId::proportional(NAME), ink))
+        egui::text::LayoutJob::single_section(shown, egui::TextFormat::simple(egui::FontId::proportional(NAME), ink))
     };
     let mut name = name;
     name.wrap = egui::text::TextWrapping::truncate_at_width(room.max(24.0));

@@ -213,14 +213,14 @@ fn list(ui: &mut egui::Ui, c: &mut Ctx, data: &super::RadarData, st: &mut People
                     } else {
                         // Highland: "OFFLINE · N" folds and unfolds them
                         let title = aurora_i18n::tr!("people-friends-offline", count = (all.len() - online) as i64);
-                        let folded = st.highland_offline_folded;
+                        let folded = c.friends.highland_offline_folded;
                         if super::nearby::folding_header(ui, c.p, &title, folded).clicked() {
-                            st.highland_offline_folded = !folded;
+                            c.friends.highland_offline_folded = !folded;
                         }
                     }
                 }
                 // Highland: folded offline friends are not listed
-                if sections && !line.friend.online && st.highland_offline_folded {
+                if sections && !line.friend.online && c.friends.highland_offline_folded {
                     continue;
                 }
                 row(ui, c, data, st, line, &order);

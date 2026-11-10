@@ -357,6 +357,8 @@ struct InlineRename {
     id: Uuid,
     name: String,
     focus: bool,
+    /// Highland: editing the item's local label (Shift+F2), not its name.
+    label: bool,
 }
 
 pub struct PropertyEdit {
@@ -744,6 +746,24 @@ impl InventoryUi {
             id,
             name: rules::name(inv, id),
             focus: true,
+            label: false,
+        });
+        self.message.clear();
+    }
+
+    /// Highland: Shift+F2, edit the local label of an item (its display
+    /// name here, the item keeps its own name).
+    pub fn begin_label(&mut self, inv: &Inventory, id: Uuid) {
+        self.keyboard_selection = false;
+        self.selected = Some(id);
+        self.selection.clear();
+        self.selection.insert(id);
+        self.reveal = Some(id);
+        self.rename = Some(InlineRename {
+            id,
+            name: crate::world::local_labels::display_name(inv, id),
+            focus: true,
+            label: true,
         });
         self.message.clear();
     }
@@ -1306,6 +1326,9 @@ pub(crate) fn folder_name(inv: &Inventory, id: Uuid) -> String {
         aurora_i18n::tr!("common-library").to_owned()
     } else if inv.folders.get(&id).is_some_and(|f| f.info.type_default == 50) {
         aurora_i18n::tr!("received-marketplace-folder").to_owned()
+    } else if inv.folders.get(&id).is_some_and(|f| f.info.type_default == 14) {
+        // Highland: the Trash is shown as "Rubbish"
+        aurora_i18n::tr!("common-trash").to_owned()
     } else {
         rules::name(inv, id)
     }
@@ -1674,7 +1697,8 @@ fn row_width(
     depth: usize,
     show_next_owner: bool,
 ) -> f32 {
-    let mut label = rules::name(inv, id);
+    // Highland: an item's local label in place of its name
+    let mut label = crate::world::local_labels::display_name(inv, id);
     if folder {
         label = folder_name(inv, id);
         match inv.folders.get(&id).map(|folder| folder.state) {
@@ -1704,9 +1728,15 @@ fn rename_row(ui: &mut egui::Ui, p: &Palette, inv: &Inventory, id: Uuid, st: &mu
         && st.pending.is_none()
         && !ui.ctx().text_edit_focused()
         && ui.input(|i| i.key_pressed(egui::Key::F2))
-        && rules::renameable(inv, id)
     {
-        st.begin_rename(inv, id);
+        // Highland: Shift+F2 gives an item a local label
+        if ui.input(|i| i.modifiers.shift) {
+            if inv.items.contains_key(&id) {
+                st.begin_label(inv, id);
+            }
+        } else if rules::renameable(inv, id) {
+            st.begin_rename(inv, id);
+        }
     }
     let Some(mut edit) = st.rename.take() else {
         return false;
@@ -1715,7 +1745,7 @@ fn rename_row(ui: &mut egui::Ui, p: &Palette, inv: &Inventory, id: Uuid, st: &mu
         st.rename = Some(edit);
         return false;
     }
-    if !rules::renameable(inv, id) {
+    if !edit.label && !rules::renameable(inv, id) {
         return false;
     }
     let r = widgets::restricted_text_field(ui, true, &mut edit.name, widgets::TextPolicy::PrintableNoPipe, |b, ui| {
@@ -1758,6 +1788,16 @@ fn finish_rename(inv: &Inventory, st: &mut InventoryUi, actions: &mut Vec<InvAct
     let Some(mut edit) = st.rename.take() else {
         return;
     };
+    if edit.label {
+        // Highland: the label is kept here; the item's own name is left,
+        // and a label equal to that name (or empty) clears it
+        let owner = crate::world::local_labels::owner(inv, edit.id);
+        let name = edit.name.trim();
+        let real = rules::name(inv, owner);
+        crate::world::local_labels::set(owner, if name == real { "" } else { name });
+        st.reveal = Some(edit.id);
+        return;
+    }
     if !rules::renameable(inv, edit.id) {
         return;
     }

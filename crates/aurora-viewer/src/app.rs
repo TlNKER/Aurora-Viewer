@@ -309,6 +309,9 @@ impl RightGesture {
     }
 }
 
+/// Highland: greet with "Enjoy Highland!" only, not the grid message and "Welcome, name".
+const HIGHLAND_LOGIN_GREETING: bool = true;
+
 /// SL timings (llviewerinput.cpp): double-tap window / nudge phase, auto-fly.
 const NUDGE_TIME: f32 = 0.25;
 const FLY_TIME: f32 = 0.5;
@@ -3828,6 +3831,12 @@ impl App {
                 } else {
                     ui::emoji::recent::Recent::load(crate::settings::account_dir(&l.agent_id))
                 };
+                // Highland: the account's local labels (Shift+F2 in the inventory)
+                if !self.demo {
+                    crate::world::local_labels::load(
+                        crate::settings::account_dir(&l.agent_id).join(crate::world::local_labels::FILE),
+                    );
+                }
                 self.world.favorites = if self.demo {
                     Default::default()
                 } else {
@@ -3937,14 +3946,20 @@ impl App {
                 self.loading_target = 0.0;
                 self.loading_stage = aurora_i18n::tr!("common-connecting-to-region").into();
                 l.message.trim().clone_into(&mut self.world.motd);
-                if !self.world.motd.is_empty() {
-                    self.world.system_message(self.world.motd.clone());
+                if HIGHLAND_LOGIN_GREETING {
+                    // Highland: one short greeting instead of the grid's
+                    // message of the day and the "Welcome, name" line
+                    self.world.system_message(aurora_i18n::tr!("highland-enjoy"));
+                } else {
+                    if !self.world.motd.is_empty() {
+                        self.world.system_message(self.world.motd.clone());
+                    }
+                    self.world.system_message(aurora_i18n::tr!(
+                        "app-welcome-2",
+                        value0 = l.first_name.to_string(),
+                        value1 = l.last_name.to_string()
+                    ));
                 }
-                self.world.system_message(aurora_i18n::tr!(
-                    "app-welcome-2",
-                    value0 = l.first_name.to_string(),
-                    value1 = l.last_name.to_string()
-                ));
                 self.restore_local_environment();
             }
             NetEvent::TeleportFinished { .. } => {
@@ -15880,6 +15895,13 @@ impl App {
                     inv.highland_add_default = true;
                     inv.double_click_add_objects = true;
                     inv.double_click_add_clothes = true;
+                    self.settings.save();
+                }
+                // Highland: settings saved before new prims became 0.2 m
+                // take it once
+                if !self.settings.build.highland_small_prims {
+                    self.settings.build.highland_small_prims = true;
+                    self.settings.build.new_prim_size = [0.2; 3];
                     self.settings.save();
                 }
                 // Highland: a gift noted in the giver's conversation opens it

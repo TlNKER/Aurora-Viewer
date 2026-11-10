@@ -10,6 +10,16 @@ use super::notifications::{Data, im as d};
 use aurora_net::{ChatMessage, ChatSourceType, InstantMessage, NetCommand};
 use uuid::Uuid;
 
+/// Highland: an object's nearby chat waits until the block list is
+/// loaded, so a blocked object (a worn one saying "Ready" at login) is
+/// not shown before the list is known.
+pub(super) const HIGHLAND_HOLD_OBJECT_CHAT: bool = true;
+
+/// Highland: a blocked object is also known by its name: an attachment
+/// gets a new id each time it is worn, so a block by id would end with
+/// the session.
+const HIGHLAND_OBJECTS_BY_NAME: bool = true;
+
 impl World {
     /// Per frame: ask for the block list and our groups once in world, and
     /// fall back on the cached list when the server stays silent.
@@ -27,6 +37,12 @@ impl World {
             self.restore_deferred_group_chats();
         }
         self.request_offline_messages_once();
+        // Highland: the object chat held until the block list was known
+        if self.mutes.is_loaded() && !self.highland_held_object_chat.is_empty() {
+            for c in std::mem::take(&mut self.highland_held_object_chat) {
+                self.on_chat(c);
+            }
+        }
     }
 
     /// LLIMProcessing::requestOfflineMessages, polled every frame: once our
@@ -74,7 +90,11 @@ impl World {
         if matches!(c.source_type, ChatSourceType::System) {
             return false;
         }
-        self.mutes.text_muted(&c.source_id, &c.from_name) || (!c.owner_id.is_nil() && self.mutes.text_muted(&c.owner_id, ""))
+        self.mutes.text_muted(&c.source_id, &c.from_name)
+            || (!c.owner_id.is_nil() && self.mutes.text_muted(&c.owner_id, ""))
+            || (HIGHLAND_OBJECTS_BY_NAME
+                && matches!(c.source_type, ChatSourceType::Object)
+                && self.mutes.object_name_text_muted(&c.from_name))
     }
 
     /// A resident whose nearby chat is hidden (`chat_blocked`) is not named

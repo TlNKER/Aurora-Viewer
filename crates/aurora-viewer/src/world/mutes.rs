@@ -266,6 +266,16 @@ impl MuteList {
         self.is_muted(id, name, flag::TEXT_CHAT)
     }
 
+    /// Highland: an object blocked (by id) under this name, its text chat
+    /// blocked: the same object worn again, with a new id.
+    pub fn object_name_text_muted(&self, name: &str) -> bool {
+        !name.is_empty()
+            && self
+                .mutes
+                .values()
+                .any(|m| m.kind == MuteType::Object && m.name == name && flag::TEXT_CHAT & m.flags == 0)
+    }
+
     /// Object sounds of an owner / object (process_sound_trigger: plain
     /// isMuted with flagObjectSounds).
     pub fn sounds_muted(&self, id: &Uuid) -> bool {

@@ -673,10 +673,12 @@ fn sensed_row(
             color,
         );
     }
+    // Highland: the item's local label in place of its name
+    let shown = crate::world::local_labels::get(&it.id).unwrap_or_else(|| it.name.clone());
     let text = if desc.is_empty() {
-        it.name.clone()
+        shown
     } else {
-        format!("{} {desc}", it.name)
+        format!("{shown} {desc}")
     };
     // The worn tag follows the name, as in the inventory's rows.
     let tag_width = worn.map_or(0.0, |label| widgets::row_tag_width(ui, label) + 6.0);
