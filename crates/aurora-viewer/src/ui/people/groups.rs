@@ -200,11 +200,13 @@ fn row(ui: &mut egui::Ui, c: &mut Ctx, st: &mut PeopleUi, g: &GroupMembership) {
     if let Some(i) = insignia {
         st.wanted_images.insert(i);
     }
+    // Highland: the picture chosen for the group, before its insignia
+    let own = crate::ui::group_images::texture(ui.ctx(), &g.id);
     let left = rows::tile(
         ui,
         p,
         rect,
-        insignia.and_then(|i| c.images.get(&i)),
+        own.as_ref().or_else(|| insignia.and_then(|i| c.images.get(&i))),
         "",
         &rows::initials(&g.name),
         p.violet,
@@ -375,11 +377,13 @@ fn head(ui: &mut egui::Ui, c: &Ctx, st: &mut PeopleUi, g: &GroupMembership) -> b
     if let Some(i) = insignia {
         st.wanted_images.insert(i);
     }
+    // Highland: the picture chosen for the group, before its insignia
+    let own = crate::ui::group_images::texture(ui.ctx(), &g.id);
     rows::paint_tile(
         ui,
         p,
         tile,
-        insignia.and_then(|i| c.images.get(&i)),
+        own.as_ref().or_else(|| insignia.and_then(|i| c.images.get(&i))),
         "",
         &rows::initials(&g.name),
         p.violet,

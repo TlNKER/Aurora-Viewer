@@ -364,6 +364,8 @@ fn list_part(
         .id_salt("people-nearby-rows")
         .auto_shrink([false, false])
         .show(ui, |ui| {
+            /// Highland: off, "Near you" is one list without range headings.
+            const HIGHLAND_BAND_HEADERS: bool = false;
             ui.spacing_mut().item_spacing.y = if compact { 0.0 } else { RICH_GAP };
             if list.is_empty() {
                 ui.add_space(8.0);
@@ -371,7 +373,8 @@ fn list_part(
             }
             let mut band = None;
             for (i, row) in list.iter().enumerate() {
-                if by_range && !compact && band != Some(Band::of(row.range)) {
+                // Highland: one list, no whisper / say / shout headings
+                if HIGHLAND_BAND_HEADERS && by_range && !compact && band != Some(Band::of(row.range)) {
                     band = Some(Band::of(row.range));
                     band_header(ui, p, Band::of(row.range));
                 }

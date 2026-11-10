@@ -369,6 +369,7 @@ fn action_key(action: &CtxAction) -> String {
         CtxAction::GroupChat(..) => "GroupChat",
         CtxAction::ActivateGroup(..) => "ActivateGroup",
         CtxAction::PinGroup(..) => "PinGroup",
+        CtxAction::PinFriend(..) => "PinFriend",
         CtxAction::LeaveGroup(..) => "LeaveGroup",
         CtxAction::GroupChatBlocked(..) => "GroupChatBlocked",
         CtxAction::ContactSet(..) => "ContactSet",

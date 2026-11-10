@@ -3832,7 +3832,11 @@ impl App {
                     ui::emoji::recent::Recent::load(crate::settings::account_dir(&l.agent_id))
                 };
                 // Highland: the account's local labels (Shift+F2 in the inventory)
+                // and pictures chosen for groups
                 if !self.demo {
+                    crate::ui::group_images::set_dir(
+                        crate::settings::account_dir(&l.agent_id).join(crate::ui::group_images::FOLDER),
+                    );
                     crate::world::local_labels::load(
                         crate::settings::account_dir(&l.agent_id).join(crate::world::local_labels::FILE),
                     );

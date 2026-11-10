@@ -2587,6 +2587,7 @@ impl World {
                 self.region_tracker = region_tracker::RegionTracker::load(&account.join(region_tracker::FILE));
                 self.contact_sets = contact_sets::ContactSets::load(account.join(contact_sets::CONTACT_SETS_FILE));
                 self.groups.load_favorites(account.join(groups::FAVORITE_GROUPS_FILE));
+                self.social.load_pinned(account.join(social::PINNED_FRIENDS_FILE));
                 self.group_data.load_read(account.join(group_data::NOTICES_READ_FILE));
                 self.status.invisible = status::Invisible::load(account.join(status::INVISIBLE_FILE));
                 let hidden = self.status.resume_invisible(&mut self.social, &mut self.groups.out);

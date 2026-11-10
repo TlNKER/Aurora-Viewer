@@ -55,6 +55,7 @@ pub mod gestures;
 pub(crate) mod give_drop;
 pub mod grid_status;
 pub mod grids;
+pub mod group_images;
 pub mod group_profile;
 pub mod group_titles;
 pub mod hover_height;

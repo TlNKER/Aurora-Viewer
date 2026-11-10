@@ -277,7 +277,9 @@ pub fn header(ui: &mut egui::Ui, c: &mut Ctx, v: &View, env: &super::Env, tab: &
     if let Some(i) = pic {
         c.wanted_images.insert(i);
     }
-    let tex = pic.and_then(|i| c.images.get(&i));
+    // Highland: the picture chosen for the group, before its insignia
+    let own = crate::ui::group_images::texture(ui.ctx(), &v.id);
+    let tex = own.as_ref().or_else(|| pic.and_then(|i| c.images.get(&i)));
     banner(ui, p, banner_rect, tex);
     hero::veil(ui, ui.painter(), p, banner_rect);
     let insignia_rect = Rect::from_center_size(
@@ -415,6 +417,22 @@ fn actions_row(
     let more = widgets::action_button(acts, p, "dots-filled", "", ActionKind::Flat, Vec2::new(BUTTON_H + 4.0, BUTTON_H))
         .on_hover_text(aurora_i18n::tr!("ui-profile-more"));
     more_menu(&more, c, v, actions);
+    // Highland: a picture of your own for the group
+    let image = widgets::action_button(acts, p, "photo-filled", "", ActionKind::Flat, Vec2::new(BUTTON_H + 4.0, BUTTON_H))
+        .on_hover_text(aurora_i18n::tr!("highland-group-image"));
+    let group = v.id;
+    crate::ui::menu::dropdown(&image, p, egui::PopupCloseBehavior::CloseOnClick, |ui| {
+        if crate::ui::menu::item(ui, p, "photo-filled", aurora_i18n::tr!("highland-group-image-choose"))
+            && let Err(e) = crate::ui::group_images::choose(group)
+        {
+            log::warn!("group picture: {e}");
+        }
+        if crate::ui::group_images::has(&group)
+            && crate::ui::menu::item(ui, p, "trash-filled", aurora_i18n::tr!("highland-group-image-remove"))
+        {
+            crate::ui::group_images::remove(group);
+        }
+    });
     if v.member.is_some() {
         // LLGroupActions::leave, confirmed by the shared dialog
         if secondary(

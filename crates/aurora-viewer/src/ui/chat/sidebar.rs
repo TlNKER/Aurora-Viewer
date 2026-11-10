@@ -451,9 +451,11 @@ pub(super) fn show(
                     if let Some(i) = insignia {
                         st.wanted_images.insert(i);
                     }
+                    // Highland: the picture chosen for the group, before its insignia
+                    let own = if kind == Kind::Group { crate::ui::group_images::texture(ui.ctx(), &id) } else { None };
                     let icon = match kind {
                         Kind::Private => Icon::Avatar(pics.get(&id), status, world.social.is_typing(&id)),
-                        Kind::Group => Icon::Group(insignia.and_then(|i| images.get(&i))),
+                        Kind::Group => Icon::Group(own.as_ref().or_else(|| insignia.and_then(|i| images.get(&i)))),
                         Kind::Conference => Icon::Glyph("users", p.muted),
                     };
                     let (sub, sub_icon) = sub_line(p, world, id, kind, status);

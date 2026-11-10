@@ -516,6 +516,8 @@ pub enum CtxAction {
     /// Make a group active (ActivateGroup), pin it in the lists, leave it.
     ActivateGroup(Uuid),
     PinGroup(Uuid),
+    /// Highland: pin a friend on top of the friends list, or unpin them.
+    PinFriend(Uuid),
     LeaveGroup(Uuid),
     /// Block / unblock a group's chat (exoGroupMuteList).
     GroupChatBlocked(Uuid, bool),
@@ -752,6 +754,17 @@ fn avatar_menu_reporting(
     }
     voice_row(ui, p, id, voice_volume_of(world, id));
     let friend = world.social.friends.iter().find(|f| f.id == id).cloned();
+    // Highland: a friend can be pinned on top of the friends list
+    if friend.is_some() {
+        let pin = if world.social.highland_pinned.contains(&id) {
+            aurora_i18n::tr!("highland-unpin-friend")
+        } else {
+            aurora_i18n::tr!("highland-pin-friend")
+        };
+        if menu::item(ui, p, "pin-filled", pin) {
+            act(CtxAction::PinFriend(id));
+        }
+    }
     let blocked = world.is_avatar_blocked(&id);
     let here = avatar_position(world, &id).is_some();
     let mappable = world.can_locate_avatar(id);

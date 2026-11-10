@@ -144,7 +144,9 @@ pub(super) fn show(
             if let Some(i) = insignia {
                 st.wanted_images.insert(i);
             }
-            sidebar::paint_group_picture(ui, p, pic, insignia.and_then(|i| images.get(&i)), PIC - 16.0);
+            // Highland: the picture chosen for the group, before its insignia
+            let own = st.selected.and_then(|id| crate::ui::group_images::texture(ui.ctx(), &id));
+            sidebar::paint_group_picture(ui, p, pic, own.as_ref().or_else(|| insignia.and_then(|i| images.get(&i))), PIC - 16.0);
         }
         (None, Some(_)) => {
             ui.painter().rect_filled(pic, radius, p.raised);

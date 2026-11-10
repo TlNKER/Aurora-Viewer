@@ -153,7 +153,9 @@ fn lines(c: &Ctx, filter: &str, set: Option<&str>) -> Vec<Line> {
         |id| by_name.get(id).map(|n| n.1.clone()).unwrap_or_default(),
     );
     let order: HashMap<Uuid, usize> = friends.iter().enumerate().map(|(i, f)| (f.id, i)).collect();
-    out.sort_by_key(|l| order.get(&l.friend.id).copied().unwrap_or(usize::MAX));
+    // Highland: pinned friends first, in the list's own order
+    let pinned = &c.world.social.highland_pinned;
+    out.sort_by_key(|l| (!pinned.contains(&l.friend.id), order.get(&l.friend.id).copied().unwrap_or(usize::MAX)));
     out
 }
 
@@ -194,7 +196,12 @@ fn list(ui: &mut egui::Ui, c: &mut Ctx, data: &super::RadarData, st: &mut People
         }
     }
     let sections = c.friends.sort == SORT_STATUS;
-    let online = all.iter().filter(|l| l.friend.online).count();
+    // Highland: the pinned friends have a section of their own on top
+    let pinned_ids = c.world.social.highland_pinned.clone();
+    let is_pinned = |l: &Line| pinned_ids.contains(&l.friend.id);
+    let pinned_count = all.iter().filter(|l| is_pinned(l)).count();
+    let online = all.iter().filter(|l| l.friend.online && !is_pinned(l)).count();
+    let offline = all.len() - pinned_count - online;
     egui::ScrollArea::vertical()
         .id_salt("people-friends-rows")
         .auto_shrink([false, false])
@@ -204,15 +211,28 @@ fn list(ui: &mut egui::Ui, c: &mut Ctx, data: &super::RadarData, st: &mut People
                 rows::empty(ui, c.p, aurora_i18n::tr!("ui-contacts-no-friends"));
             }
             let mut section = None;
+            let mut pinned_head = false;
             for line in &all {
-                if sections && section != Some(line.friend.online) {
-                    section = Some(line.friend.online);
-                    if line.friend.online {
+                if is_pinned(line) {
+                    if !pinned_head {
+                        pinned_head = true;
+                        let title = aurora_i18n::tr!("highland-pinned-friends", count = pinned_count as i64);
+                        super::nearby::section_header(ui, c.p, &title);
+                    }
+                    row(ui, c, data, st, line, &order);
+                    continue;
+                }
+                if (sections || pinned_head) && section != Some(line.friend.online || !sections) {
+                    section = Some(line.friend.online || !sections);
+                    if !sections {
+                        // sorted by name: the rest under one heading
+                        super::nearby::section_header(ui, c.p, &aurora_i18n::tr!("common-friends"));
+                    } else if line.friend.online {
                         let title = aurora_i18n::tr!("people-friends-online", count = online as i64);
                         super::nearby::section_header(ui, c.p, &title);
                     } else {
                         // Highland: "OFFLINE · N" folds and unfolds them
-                        let title = aurora_i18n::tr!("people-friends-offline", count = (all.len() - online) as i64);
+                        let title = aurora_i18n::tr!("people-friends-offline", count = offline as i64);
                         let folded = c.friends.highland_offline_folded;
                         if super::nearby::folding_header(ui, c.p, &title, folded).clicked() {
                             c.friends.highland_offline_folded = !folded;
