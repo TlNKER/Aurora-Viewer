@@ -4726,6 +4726,15 @@ impl App {
             }
             // Highland: Alt+N, as World › About Land
             Action::AboutLand => self.panels.about_land = true,
+            Action::ToggleDnd => {
+                // Highland: Do Not Disturb, or back to Available
+                let dnd = !self.world.status.dnd;
+                if !dnd {
+                    self.world.set_away(false);
+                    self.auto_away = false;
+                }
+                self.world.set_dnd(dnd);
+            }
             Action::HideParticles => {
                 self.settings.world_overlays.hide_particles = !self.settings.world_overlays.hide_particles;
                 self.settings.save();

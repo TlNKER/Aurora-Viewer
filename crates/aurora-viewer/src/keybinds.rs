@@ -439,6 +439,8 @@ pub enum Action {
     LandOwners,
     /// Highland: About Land (Alt+N).
     AboutLand,
+    /// Highland: Do Not Disturb on or off (Alt+U).
+    ToggleDnd,
     HideParticles,
     /// Aurora's Dev Toolbox window (Ctrl+Alt+D).
     DevToolbox,
@@ -646,6 +648,7 @@ pub fn sections() -> &'static Vec<(&'static str, Vec<(Action, &'static str)>)> {
                     (Action::PropertyLines, aurora_i18n::tr!("world-property-lines")),
                     (Action::LandOwners, aurora_i18n::tr!("world-land-owners")),
                     (Action::AboutLand, aurora_i18n::tr!("common-about-land")),
+                    (Action::ToggleDnd, aurora_i18n::tr!("highland-toggle-dnd")),
                     (Action::HideParticles, aurora_i18n::tr!("world-hide-particles")),
                 ],
             ),
@@ -804,6 +807,8 @@ impl KeyBindings {
             (Action::Conversations, [kmod(K::KeyT, true, false), None]),
             // Highland: Alt+N opens About Land
             (Action::AboutLand, [kalt(K::KeyN, false, false), None]),
+            // Highland: Alt+U, Do Not Disturb or Available
+            (Action::ToggleDnd, [kalt(K::KeyU, false, false), None]),
             (Action::People, [kmod(K::KeyA, true, true), None]),
             // menu_viewer.xml: Friends, Groups, Contact Sets
             (Action::Friends, [kmod(K::KeyF, true, true), None]),
