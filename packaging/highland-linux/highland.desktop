@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Highland
+GenericName=Second Life Viewer
+Comment=Explore Second Life
+Exec=highland
+Icon=highland
+Terminal=false
+Categories=Game;Simulation;
+Keywords=Second Life;SL;metaverse;virtual world;
+StartupWMClass=highland

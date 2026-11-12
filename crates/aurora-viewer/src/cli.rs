@@ -219,8 +219,10 @@ const HIGHLAND_PLAIN_TITLE: bool = true;
 /// name, which X11 used by default: X11 desktops see no change. The Legacy
 /// Viewer's `com.secondlife.indra.viewer` is shared by every viewer of its
 /// family, so Aurora does not take it.
+/// Highland: its own id (and `packaging/highland-linux/highland.desktop`),
+/// so it never mixes with an official Aurora on the same Linux desktop.
 #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-pub const DESKTOP_ID: &str = "aurora-viewer";
+pub const DESKTOP_ID: &str = "highland";
 
 /// Window attributes with the [`DESKTOP_ID`] on Linux; elsewhere unchanged.
 pub fn with_desktop_id(attrs: winit::window::WindowAttributes) -> winit::window::WindowAttributes {

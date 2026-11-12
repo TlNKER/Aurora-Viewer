@@ -11,7 +11,7 @@
 //! (indra/newview/linux_tools/) writes a hidden desktop entry for the scheme
 //! into the user's applications folder and makes it the default with
 //! `xdg-mime default`. Aurora writes the same two files itself, per the XDG
-//! specifications: `$XDG_DATA_HOME/applications/aurora-viewer-slurl.desktop`
+//! specifications: `$XDG_DATA_HOME/applications/highland-slurl.desktop`
 //! and its `x-scheme-handler/<scheme>` defaults in
 //! `$XDG_CONFIG_HOME/mimeapps.list`, the rest of which it leaves untouched.
 
@@ -244,7 +244,8 @@ mod xdg {
 
     /// Aurora's own entry, hidden from the menus (the shipped
     /// `aurora-viewer.desktop` claims no scheme: registering stays a choice).
-    const DESKTOP_ID: &str = "aurora-viewer-slurl.desktop";
+    // Highland: its own entry, beside an official Aurora's
+    const DESKTOP_ID: &str = "highland-slurl.desktop";
     const DEFAULTS: &str = "Default Applications";
 
     fn home_dir(var: &str, fallback: &str) -> Option<PathBuf> {
@@ -417,8 +418,8 @@ mod xdg {
     pub(super) fn desktop_entry(exe: &str) -> String {
         let mimes: String = SCHEMES.iter().map(|s| format!("x-scheme-handler/{s};")).collect();
         format!(
-            "[Desktop Entry]\nType=Application\nName=Aurora Viewer\nComment=Opens Second Life and Hypergrid links\n\
-             Exec={}\nIcon=aurora-viewer\nTerminal=false\nNoDisplay=true\nMimeType={mimes}\n",
+            "[Desktop Entry]\nType=Application\nName=Highland\nComment=Opens Second Life and Hypergrid links\n\
+             Exec={}\nIcon=highland\nTerminal=false\nNoDisplay=true\nMimeType={mimes}\n",
             exec_line(exe)
         )
     }
@@ -765,8 +766,8 @@ mod xdg_tests {
     #[test]
     fn mimeapps_defaults_are_edited_in_place() {
         let key = "x-scheme-handler/secondlife";
-        let set = with_value(LIST, "Default Applications", key, Some("aurora-viewer-slurl.desktop"));
-        assert_eq!(value(&set, "Default Applications", key), Some("aurora-viewer-slurl.desktop"));
+        let set = with_value(LIST, "Default Applications", key, Some("highland-slurl.desktop"));
+        assert_eq!(value(&set, "Default Applications", key), Some("highland-slurl.desktop"));
         // the other sections, keys and the comment stay
         assert_eq!(value(&set, "Added Associations", "text/html"), Some("firefox.desktop;"));
         assert_eq!(value(&set, "Default Applications", "text/plain"), Some("kate.desktop"));
@@ -789,18 +790,18 @@ mod xdg_tests {
         let on = ours_first(earlier);
         assert_eq!(
             on,
-            format!("aurora-viewer-slurl.desktop;{}", earlier.expect("the fixture's default"))
+            format!("highland-slurl.desktop;{}", earlier.expect("the fixture's default"))
         );
         assert_eq!(without_ours(Some(&on)).as_deref(), earlier);
         // registered twice, or already in the list: listed once, first
         assert_eq!(ours_first(Some(&on)), on);
         assert_eq!(
-            ours_first(Some("a.desktop; aurora-viewer-slurl.desktop;b.desktop")),
-            "aurora-viewer-slurl.desktop;a.desktop;b.desktop;"
+            ours_first(Some("a.desktop; highland-slurl.desktop;b.desktop")),
+            "highland-slurl.desktop;a.desktop;b.desktop;"
         );
         // no earlier handler: Aurora alone, and nothing left once off
-        assert_eq!(ours_first(None), "aurora-viewer-slurl.desktop;");
-        assert_eq!(without_ours(Some("aurora-viewer-slurl.desktop;")), None);
+        assert_eq!(ours_first(None), "highland-slurl.desktop;");
+        assert_eq!(without_ours(Some("highland-slurl.desktop;")), None);
         assert_eq!(without_ours(None), None);
     }
 
