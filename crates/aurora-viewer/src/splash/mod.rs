@@ -69,9 +69,18 @@ fn wanted(splash: Option<&str>, capture: bool, splash_capture: bool) -> bool {
     }
 }
 
+/// Highland: no startup splash (unless AURORA_SPLASH=1). Its window is
+/// another process, and Windows then took Highland's button off its pinned
+/// place on the taskbar and added a new one at the end.
+const HIGHLAND_NO_SPLASH: bool = true;
+
 fn wanted_here() -> bool {
+    let splash = std::env::var("AURORA_SPLASH").ok();
+    if HIGHLAND_NO_SPLASH && splash.as_deref().map(str::trim) != Some("1") {
+        return false;
+    }
     wanted(
-        std::env::var("AURORA_SPLASH").ok().as_deref(),
+        splash.as_deref(),
         std::env::var_os("AURORA_CAPTURE").is_some(),
         std::env::var_os("AURORA_SPLASH_CAPTURE").is_some(),
     )
