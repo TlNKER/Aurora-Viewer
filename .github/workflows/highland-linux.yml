@@ -1,0 +1,86 @@
+# Highland for Linux: builds the viewer on Ubuntu 24.04 (as Aurora's release
+# does), packs it as Highland-linux-x64.tar.gz with its desktop entry, icon,
+# licences and install guide (docs/HIGHLAND-LINUX.md), and publishes it as
+# this fork's newest release, so one link always gives the newest:
+#   https://github.com/<fork>/releases/latest/download/Highland-linux-x64.tar.gz
+# Started by pushing a tag highland-linux-* (aurora-linux.ps1 on the PC does
+# it), or by hand from the Actions tab.
+name: Highland for Linux
+
+on:
+  push:
+    tags: ['highland-linux-*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: highland-linux
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    # never in the official repository
+    if: github.repository != 'Aurora-Viewer/Aurora-Viewer'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      # Aurora's version tags, so the viewer knows which Aurora it is built on
+      - name: Aurora's version tags
+        run: git fetch --quiet --tags https://github.com/Aurora-Viewer/Aurora-Viewer.git || true
+      - name: System libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libudev-dev libxkbcommon-dev libwayland-dev
+      - name: Rust stable
+        run: rustup update stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Build
+        env:
+          CARGO_PROFILE_RELEASE_STRIP: debuginfo
+        run: cargo build --release --locked -p aurora-viewer
+      - name: Package
+        run: |
+          set -euo pipefail
+          out=Highland-linux-x64
+          mkdir -p "$out/assets/emoji" "$out/assets/dictionaries"
+          cp target/release/aurora-viewer "$out/highland"
+          chmod +x "$out/highland"
+          cp packaging/highland-linux/highland.desktop "$out/"
+          cp assets/branding/highland-logo.png "$out/highland.png"
+          cp docs/HIGHLAND-LINUX.md "$out/README.md"
+          cp LICENSE NOTICE.md "$out/"
+          # the licences of what is inside the viewer (as Aurora's package)
+          cp assets/emoji/LICENSE-OFL.txt "$out/assets/emoji/"
+          d=crates/aurora-viewer/assets/dictionaries
+          cp "$d/README.md" "$out/assets/dictionaries/"
+          for dir in "$d"/*/; do
+            name=$(basename "$dir")
+            if [ -f "$dir/LICENSE.txt" ]; then cp "$dir/LICENSE.txt" "$out/assets/dictionaries/$name-LICENSE.txt"; fi
+          done
+          tar -czf "$out.tar.gz" "$out"
+          sha256sum "$out.tar.gz" > "$out.tar.gz.sha256"
+          echo "VERSION=$("$out/highland" --version 2>/dev/null | head -1 || true)" >> "$GITHUB_ENV"
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ "${GITHUB_REF_TYPE}" = tag ]; then tag="${GITHUB_REF_NAME}"; else tag="highland-linux-$(date -u +%Y%m%d-%H%M)"; fi
+          {
+            echo "**${VERSION:-Highland} for Linux**, built $(date -u '+%d %b %Y %H:%M') UTC from \`$(git rev-parse --short HEAD)\`."
+            echo
+            echo "Download **Highland-linux-x64.tar.gz** below; the steps are underneath."
+            echo
+            sed '1d' docs/HIGHLAND-LINUX.md
+          } > notes.md
+          gh release create "$tag" Highland-linux-x64.tar.gz Highland-linux-x64.tar.gz.sha256 \
+            --target "$(git rev-parse HEAD)" --title "Highland for Linux ($(date -u +%Y-%m-%d))" \
+            --notes-file notes.md --latest
+          # keep the three newest Highland releases (and their tags)
+          gh release list --limit 100 --json tagName,createdAt --jq '[.[] | select(.tagName | startswith("highland-linux-"))] | sort_by(.createdAt) | reverse | .[3:] | .[].tagName' |
+            while read -r old; do gh release delete "$old" --yes --cleanup-tag || true; done
