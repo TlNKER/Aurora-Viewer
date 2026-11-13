@@ -269,7 +269,9 @@ fn tags(ui: &mut egui::Ui, p: &Palette, th: &Thread, line: &ChatLine, who: &Who)
     }
     if who.object {
         tag(ui, aurora_i18n::tr!("ui-chat-tag-object"), Some(p.raised), p.muted);
-    } else if th.moderators.is_some_and(|m| m.contains(&line.source)) {
+    // Highland: `who.avatar`, not `line.source`, so your own lines get the
+    // MOD tag too where you moderate (your lines carry no source)
+    } else if th.moderators.is_some_and(|m| m.contains(&who.avatar)) {
         tag(
             ui,
             aurora_i18n::tr!("ui-chat-tag-moderator"),
