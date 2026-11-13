@@ -65,9 +65,9 @@ pub use workspace::{
     navigation_beside, navigation_wrapped, paint_glyph, section_header, sort_caret, stat, surface,
 };
 pub(crate) use workspace::{
-    finish_bar_glass, inventory_item_label, inventory_item_label_tagged, inventory_spacing, island_shape, organization_drag_preview,
-    organization_drop_target, organization_header, organization_section, organization_source, organization_typography, overlay,
-    overlay_frame, paint_world_label,
+    finish_bar_glass, inventory_item_label, inventory_item_label_tagged, inventory_spacing, island, island_shape,
+    organization_drag_preview, organization_drop_target, organization_header, organization_section, organization_source,
+    organization_typography, overlay, overlay_frame, paint_world_label,
 };
 
 /// Whether UI owns a world-pointer event at `pos` (logical points). Resize
@@ -1879,7 +1879,7 @@ pub fn switch_labeled_wrapped(ui: &mut egui::Ui, p: &Palette, on: &mut bool, lab
 }
 
 /// Custom-painted controls follow an explicit font override in their UI scope.
-fn control_font(ui: &egui::Ui, default_size: f32) -> egui::FontId {
+pub(crate) fn control_font(ui: &egui::Ui, default_size: f32) -> egui::FontId {
     ui.style()
         .override_font_id
         .clone()
