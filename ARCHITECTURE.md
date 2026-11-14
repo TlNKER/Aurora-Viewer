@@ -1648,6 +1648,17 @@ it runs inside the existing parallel pose workers. Neither motion sends
 AgentAnimation requests. `demo_pointing.rs` exercises local/remote hints,
 release, privacy and gun aim offline.
 
+`world/beams.rs` owns the selection and give beams (ViewerEffect type 7,
+LLHUDEffectBeam): the beams received, dropped with their source or target
+and faded out after their duration, our tractor beam sent every 0.25 s
+toward the point-at position (idleUpdateTractorBeam) and the one-second
+beams of gives and drops (`App::fire_beam` in `app/pointing.rs`, called by
+`app/inventory.rs` and `app/inventory_drag.rs`), and the `beams::Settings`
+of Preferences › Build and › Aurora. `ui/beams.rs` draws them on the world
+layer, hidden by the scene: Aurora's thread from the left wrist to the
+side of the target, or the Legacy Viewer's particles. `demo_beams.rs` is
+`AURORA_DEMO_BEAMS`.
+
 `world/anti_spam.rs` owns session-local counters and source/category blocks,
 following NACLAntiSpamQueue::checkEntry and the incoming message handlers in
 `indra/newview/NACLantispam.cpp`, `llimprocessing.cpp` and `llviewermessage.cpp`.
@@ -2779,6 +2790,9 @@ read-only. The catalogue of Firestorm's native names is embedded in
 `lsl_keywords.rs` holds the catalogue in use, the embedded one or the one the
 agent's region names (SimulatorFeatures' LSLSyntaxId, followed by
 `world/lsl_syntax.rs`, fetched and cached by `aurora-net/src/lsl_syntax.rs`).
+An SLua script (compile target Lua) is lexed with Lua's rules and the SLua
+catalogue, `assets/slua/keywords_lua_default.xml` from secondlife/lsl-definitions,
+parsed once by `lsl_keywords::lua`.
 The lexical analysis and the formats stay cached per document as long as the
 source, the theme, the font and that catalogue do not change; the
 source sent to the simulator keeps its bytes exactly when the preprocessor is
@@ -3018,6 +3032,7 @@ Scripts use a shared editor (`ui/scripts.rs`, actions in `app/scripts.rs`) for i
 | `settings/registry.rs` | The settings by name (`camera.fov`), read from their serialised form so that the list cannot drift: kind, value, default, and a change that goes back through the settings' deserialisation and `sanitized`. Keeps out the login, this PC's values, service keys and any text holding a UUID; `Locks` is the rule for what RLVa holds |
 | `ui/debug_settings.rs`, `app/debug_settings.rs` | The Debug Settings window (LLFloaterSettingsDebug) over `settings/registry.rs`: search, changed only, the editor of each kind, Copy name, Reset, the warning; a setting's comment is what Preferences says of it (`options::describe_settings`) |
 | `ui/quick_prefs.rs`, `app/quick_prefs.rs` | The toolbar's Quick preferences command (FloaterQuickPrefs): seven of the nine default rows of the Legacy Viewer's quick_preferences.xml (Tags Offset and Color Under Cursor have no Aurora setting) bound to the typed settings Preferences edits (each row sets the same field with the same clamp), Hover Height, Max Bandwidth, Max Complexity, and the environment block shared with the Environment window (`EnvironmentUi::selector_body`); changes are applied and saved like Preferences' (`ui/quick_prefs.rs`); the window in the frame and its demo (`app/quick_prefs.rs`, `AURORA_DEMO_QUICKPREFS`) |
+| `ui/surface_opacity.rs` | Opacity of what lies over the world (Preferences › Appearance › Skin): the focused, unfocused and Conversations window rules (`level`, simpler than the Legacy Viewer's), plus bars, menus, the chat over the world, name tags, the mini-map and the pie menu. `fade_after` fades a layer's surfaces by their palette colour, leaving text and pictures; nothing is walked at 1. Ignored in high contrast |
 | `stream_title.rs`, `ui/stream_title.rs` | World › Stream title (FSFloaterStreamTitle, FSStreamTitleManager): the parcel radio's title now and the titles played before, a new one kept when it differs from the last, at most `audio.stream_title_history` (`stream_title.rs`, fed by `App::update_audio`); the window with the sliding title and its History button, Aurora's text-only look laid over the world and dragged anywhere, and the history window with its selection, copy, Clear and maximum (`ui/stream_title.rs`) |
 | `movement/crouch_toggle.rs` | Crouch as a toggle (FSCrouchToggle): the Down key's latch, let go by a jump or flying |
 | `world/chat_log.rs`, `world/chat_log/`, `world/transcripts.rs` | Conversation history on disk, like the Legacy Viewer (LLLogChat, LLIMModel::logToFile). `chat_log/format.rs`: text of a line (`[YYYY/MM/DD HH:MM]  Name: text`, SLT time, following lines preceded by a space, `:` of a name written `%3A`) and its reading back; `names.rs`: file of each conversation (`chat`, legacy name of the resident, `<group> (group)`, dated conference), forbidden characters, reserved names of Windows, date in the names; `store.rs`: folder of an account on a grid (`accounts/<uuid>/chat_logs/<grid>`), `aurora-chatlog` thread that appends the lines (file opened, written and closed again for each batch, each task carrying its full path) and reads back the end of a file (LOG_RECALL_SIZE); `transcript.rs`: whole file for the History window, in pages of 100 messages, without keeping it in memory (index of the pages, page-by-page search); `import.rs`: a Legacy Viewer's transcripts brought in one way (its folders on each system, InstantMessageLogPath, merge by time without what the Aurora file already has, one file at a time on the transcript thread); `chat_log.rs`: facade opened at login and closed at logout, settings. `transcripts.rs` links the conversations to the files: file name of a session, lines waiting for a name, history requested before the first write, history lines (`Origin::Log`, `Origin::ServerLog`) placed before the new ones, merge with the history of the group chat server, stable numbering of the lines for the view (`LineClock`) |
@@ -4638,8 +4653,13 @@ Avatar Studio (`avatar_studio.rs`, `app/avatar_studio.rs`,
 `scene/avatar_studio.rs`) is a session-local dressing-room presentation,
 toggled by the configurable `avatar_studio` toolbar command or the wolf menu's
 Build > Avatar Studio entry, before Poser and IK Edit. Both share the same
-toggle and active indication. Left-drag orbits;
-right-drag adjusts the avatar-relative focus height without avatar-height bounds.
+toggle and active indication. Seated entry uses the avatar's resolved world
+rotation through the seat/link hierarchy to frame its front; standing entry
+retains the agent's heading.
+The seated podium uses the furniture linkset's bounds, excluding sitters and
+attachments. Its centre is cached in the furniture root's local frame and follows
+that root without a per-frame linkset scan; the camera still focuses on the avatar.
+Left-drag orbits; right-drag adjusts the avatar-relative focus height without avatar-height bounds.
 Right clicks retain the native avatar and attachment context menus. The shared
 10-point right-gesture threshold separates a click from a focus-height drag;
 dragging never opens a menu on release. Attachment editing keeps native
@@ -4715,7 +4735,13 @@ finish using the renderer's built-in neutral textures. Its supplemental CPU
 draw is included in the main view and both water captures, alongside GPU
 avatar draws; the reflected camera therefore sees the same solid occluder.
 The existing isolation visibility path selects the live avatar and its
-attachments without replacing photo choices. Terrain isolation also clears
+attachments without replacing photo choices. When seated, it also includes
+the seat's complete linkset and avatars seated on any prim of that linkset,
+with their body attachments but not their HUDs. The sorted root set invalidates
+GPU visibility when sitters join, stand or change seats; existing hidden render
+types and avatar detail limits still apply. The entry floor accounts for the
+furniture's rotated bounds so the podium does not intersect its base.
+Terrain isolation also clears
 the separate classic/PBR terrain lists used by water reflection and refraction,
 including offscreen land. Region terrain, water and
 particles are replaced by the local stage; native windows and worn HUDs
