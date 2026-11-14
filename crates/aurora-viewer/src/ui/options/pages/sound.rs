@@ -356,10 +356,10 @@ fn interface_sounds(cx: &mut Cx) {
                             ch |= ui.selectable_value(mode, m, m.label()).changed();
                         }
                     });
-                if widgets::flat_button(ui, &p, tr!("ui-options-listen")).clicked()
+                if widgets::icon_button(ui, &p, "player-play-filled", tr!("ui-options-listen"), true)
                     && let Some(id) = s.audio.ui.resolve(sound, true)
                 {
-                    crate::ui::sound_cues::preview(ui.ctx(), id);
+                    crate::ui::sound_cues::preview_at(ui.ctx(), id, s.audio.ui.gain(sound));
                 }
                 ch
             });
@@ -384,12 +384,15 @@ fn interface_sounds(cx: &mut Cx) {
                 let t = Custom {
                     path: "audio.ui",
                     modified: move |s: &crate::settings::Settings, d: &crate::settings::Settings| {
-                        ui_sound_plays(s, sound) != ui_sound_plays(d, sound) || s.audio.ui.uuid(sound) != d.audio.ui.uuid(sound)
+                        ui_sound_plays(s, sound) != ui_sound_plays(d, sound)
+                            || s.audio.ui.uuid(sound) != d.audio.ui.uuid(sound)
+                            || s.audio.ui.volume(sound) != d.audio.ui.volume(sound)
                     },
                     reset: move |s: &mut crate::settings::Settings, d: &crate::settings::Settings| {
                         let (on, id) = (ui_sound_plays(d, sound), d.audio.ui.uuid(sound));
                         set_ui_sound_plays(s, sound, on);
                         s.audio.ui.set_uuid(sound, id);
+                        s.audio.ui.set_volume(sound, d.audio.ui.volume(sound));
                     },
                 };
                 cx.wide().keywords(e.name).row_with((e.label)(), &hint, &t, |ui, s, st, _| {
@@ -414,11 +417,26 @@ fn interface_sounds(cx: &mut Cx) {
                         u.set_uuid(e.sound, id);
                         ch = true;
                     }
+                    // Highland: the sound's own volume, in percent
+                    let mut vol = u.volume(e.sound);
+                    if ui
+                        .add(
+                            egui::DragValue::new(&mut vol)
+                                .range(0..=100)
+                                .speed(0.5)
+                                .suffix("%"),
+                        )
+                        .on_hover_text(tr!("highland-ui-sound-volume"))
+                        .changed()
+                    {
+                        u.set_volume(e.sound, vol);
+                        ch = true;
+                    }
                     // force_sound: heard even when switched off
-                    if widgets::flat_button(ui, &p, tr!("ui-options-listen")).clicked()
+                    if widgets::icon_button(ui, &p, "player-play-filled", tr!("ui-options-listen"), true)
                         && let Some(id) = u.resolve(e.sound, true)
                     {
-                        crate::ui::sound_cues::preview(ui.ctx(), id);
+                        crate::ui::sound_cues::preview_at(ui.ctx(), id, u.gain(e.sound));
                     }
                     if u.uuid(e.sound) != e.uuid && widgets::flat_button(ui, &p, tr!("common-default")).clicked() {
                         u.set_uuid(e.sound, e.uuid);

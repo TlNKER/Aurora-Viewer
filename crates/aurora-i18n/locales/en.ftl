@@ -13122,6 +13122,7 @@ received-auto-accept-notify-help = Show an informational notification without as
 received-auto-accepted-title = Inventory received
 received-auto-accepted-resident = { $name } gave you this { $kind }: { $item }
 highland-gave-you = { $name } gave you { $item }.
+highland-ui-sound-volume = This sound's own volume, in percent of the interface sounds' volume. Drag or click and type 0 to 100
 highland-ctrl-o-opens = Ctrl+O opens Appearance on
 highland-ctrl-o-opens-help = The tab of the Appearance window that Ctrl+O opens: the Outfits list or the Outfit gallery
 received-auto-accepted-object = An object named { $object } gave you this { $kind }: { $item }

@@ -257,11 +257,24 @@ fn row(ui: &mut egui::Ui, c: &mut Ctx, st: &mut PeopleUi, g: &GroupMembership) {
     let tag = active.then(|| (aurora_i18n::tr!("people-groups-active-tag"), tag_ink, tag_fill));
     let color = if g.list_in_profile { p.ink } else { p.ink.gamma_multiply(0.85) };
     rows::names(ui, p, rect, left, end.names_right, &g.name, color, &second_line(c, g), None, tag);
-    if resp.clicked() {
-        open_group_sheet(c, st, g.id);
-    }
+    // Highland: a double click opens the group's chat. The sheet opens only
+    // once the time for a second click has passed, or its opening would take
+    // the second click away from the row.
+    let pending = resp.id.with(("highland-group-click", g.id));
+    let now = ui.input(|i| i.time);
     if resp.double_clicked() {
+        ui.data_mut(|d| d.remove::<f64>(pending));
         c.actions.push(PeopleAction::GroupChat(g.id));
+    } else if resp.clicked() {
+        ui.data_mut(|d| d.insert_temp(pending, now));
+    }
+    if let Some(at) = ui.data(|d| d.get_temp::<f64>(pending)) {
+        if now - at > 0.32 {
+            ui.data_mut(|d| d.remove::<f64>(pending));
+            open_group_sheet(c, st, g.id);
+        } else {
+            ui.ctx().request_repaint_after(std::time::Duration::from_millis(80));
+        }
     }
     // menu_people_groups.xml
     let (id, world) = (g.id, c.world);

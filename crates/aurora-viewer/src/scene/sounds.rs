@@ -269,7 +269,7 @@ pub struct SoundManager {
     sources: HashMap<Uuid, Source>,
     triggered: Vec<Triggered>,
     /// Interface sounds waiting for their clip.
-    ui_pending: Vec<(Uuid, Instant)>,
+    ui_pending: Vec<(Uuid, Instant, f32)>,
     next_voice: u64,
     /// Sound cut-off radius of objects (llSetSoundRadius), from their updates.
     radius: HashMap<Uuid, f32>,
@@ -510,11 +510,17 @@ impl SoundManager {
 
     /// An interface sound (Ui channel, not placed).
     pub fn play_ui(&mut self, engine: Option<&AudioEngine>, sound: Uuid) {
+        self.play_ui_at(engine, sound, 1.0);
+    }
+
+    /// Highland: an interface sound at `gain` (its own volume, Preferences ›
+    /// Sound and voice › Interface sounds).
+    pub fn play_ui_at(&mut self, engine: Option<&AudioEngine>, sound: Uuid, gain: f32) {
         match (self.ready(&sound), engine) {
-            (Some(c), Some(e)) => e.play_clip(Channel::Ui, &c, 1.0),
+            (Some(c), Some(e)) => e.play_clip(Channel::Ui, &c, gain),
             _ => {
                 self.want(sound);
-                self.ui_pending.push((sound, Instant::now()));
+                self.ui_pending.push((sound, Instant::now(), gain));
             }
         }
     }
@@ -630,7 +636,7 @@ impl SoundManager {
             .flatten()
             .chain(self.triggered.iter().map(|t| t.sound))
             .chain(self.previews.keys().copied())
-            .chain(self.ui_pending.iter().map(|(id, _)| *id))
+            .chain(self.ui_pending.iter().map(|(id, _, _)| *id))
             .collect();
         let mut idle: Vec<(u64, Uuid, usize)> = self
             .clips
@@ -762,17 +768,17 @@ impl SoundManager {
         });
         // interface sounds whose clip arrived
         let mut ui_play = Vec::new();
-        self.ui_pending.retain(|(id, at)| {
+        self.ui_pending.retain(|(id, at, gain)| {
             if self.clips.get(id).is_some_and(|c| c.clip.is_some()) {
-                ui_play.push(*id);
+                ui_play.push((*id, *gain));
                 return false;
             }
             now.duration_since(*at) < Duration::from_secs(3)
         });
         if let Some(e) = engine {
-            for id in ui_play {
+            for (id, gain) in ui_play {
                 if let Some(c) = self.ready(&id) {
-                    e.play_clip(Channel::Ui, &c, 1.0);
+                    e.play_clip(Channel::Ui, &c, gain);
                 }
             }
         }

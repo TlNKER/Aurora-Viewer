@@ -252,6 +252,8 @@ pub struct UiSoundSettings {
     pub play: BTreeMap<String, bool>,
     /// `UISnd<name>` (nil = silent).
     pub uuid: BTreeMap<String, Uuid>,
+    /// Highland: each sound's own volume in percent (0 - 100; absent = 100).
+    pub volume: BTreeMap<String, u8>,
     pub im_mode: ImSoundMode,
     pub group_mode: ImSoundMode,
     pub conf_mode: ImSoundMode,
@@ -264,6 +266,7 @@ impl Default for UiSoundSettings {
         UiSoundSettings {
             play: BTreeMap::new(),
             uuid: BTreeMap::new(),
+            volume: BTreeMap::new(),
             im_mode: ImSoundMode::NewSession,
             group_mode: ImSoundMode::NewSession,
             conf_mode: ImSoundMode::NewSession,
@@ -285,6 +288,25 @@ impl UiSoundSettings {
         } else {
             self.play.insert(e.name.to_owned(), on);
         }
+    }
+
+    /// Highland: the sound's own volume, 0 - 100 percent.
+    pub fn volume(&self, s: UiSound) -> u8 {
+        self.volume.get(s.entry().name).copied().unwrap_or(100).min(100)
+    }
+
+    pub fn set_volume(&mut self, s: UiSound, percent: u8) {
+        let name = s.entry().name;
+        if percent >= 100 {
+            self.volume.remove(name);
+        } else {
+            self.volume.insert(name.to_owned(), percent);
+        }
+    }
+
+    /// Highland: the sound's volume as a gain (1.0 = full).
+    pub fn gain(&self, s: UiSound) -> f32 {
+        f32::from(self.volume(s)) / 100.0
     }
 
     pub fn uuid(&self, s: UiSound) -> Uuid {

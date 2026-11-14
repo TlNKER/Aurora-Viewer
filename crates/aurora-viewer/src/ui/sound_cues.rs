@@ -45,11 +45,16 @@ fn previews_id() -> Id {
 
 /// Plays the asset `id` whatever the settings (preview button, force_sound).
 pub fn preview(ctx: &Context, id: uuid::Uuid) {
-    ctx.data_mut(|d| d.get_temp_mut_or_default::<Vec<uuid::Uuid>>(previews_id()).push(id));
+    preview_at(ctx, id, 1.0);
 }
 
-pub fn take_previews(ctx: &Context) -> Vec<uuid::Uuid> {
-    ctx.data_mut(|d| std::mem::take(d.get_temp_mut_or_default::<Vec<uuid::Uuid>>(previews_id())))
+/// Highland: a preview at a sound's own volume.
+pub fn preview_at(ctx: &Context, id: uuid::Uuid, gain: f32) {
+    ctx.data_mut(|d| d.get_temp_mut_or_default::<Vec<(uuid::Uuid, f32)>>(previews_id()).push((id, gain)));
+}
+
+pub fn take_previews(ctx: &Context) -> Vec<(uuid::Uuid, f32)> {
+    ctx.data_mut(|d| std::mem::take(d.get_temp_mut_or_default::<Vec<(uuid::Uuid, f32)>>(previews_id())))
 }
 
 /// A floater is shown this frame (its open / close sounds).

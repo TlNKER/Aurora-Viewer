@@ -5912,7 +5912,8 @@ impl App {
             // RUST_LOG=info,ui_sound=debug (Firestorm UISndDebugSpamToggle)
             log::debug!(target: "ui_sound", "UISnd{} ({id})", s.entry().name);
             self.scene.sounds.want_kept(id);
-            self.scene.sounds.play_ui(self.audio_engine.as_ref(), id);
+            let gain = self.settings.audio.ui.gain(s);
+            self.scene.sounds.play_ui_at(self.audio_engine.as_ref(), id, gain);
         }
     }
 
@@ -6110,7 +6111,8 @@ impl App {
                     .index_of_uuid(&av)
                     .and_then(|i| Scene::object_transform(&self.world, i, Instant::now(), 0))
             {
-                self.scene.sounds.trigger(id, pos.0, Some(av), 1.0);
+                let gain = self.settings.audio.ui.gain(UiSound::Typing);
+                self.scene.sounds.trigger(id, pos.0, Some(av), gain);
             }
         }
         let engine = self.audio_engine.as_ref();
@@ -12418,8 +12420,8 @@ impl App {
         if self.in_world() {
             self.world.ui_sounds.extend(cues);
             // preview buttons of the sound preferences (force_sound)
-            for id in previews {
-                self.scene.sounds.play_ui(self.audio_engine.as_ref(), id);
+            for (id, gain) in previews {
+                self.scene.sounds.play_ui_at(self.audio_engine.as_ref(), id, gain);
             }
         }
         self.ui_parts
