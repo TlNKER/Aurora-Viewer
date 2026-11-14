@@ -424,6 +424,16 @@ pub fn page(cx: &mut Cx, tab: usize) {
                     tr!("ui-options-aurora-bars-classic"),
                     &field!(classic_bars),
                 );
+                // Highland: the tab Ctrl+O opens the Appearance window on
+                cx.choice(
+                    tr!("highland-ctrl-o-opens"),
+                    tr!("highland-ctrl-o-opens-help"),
+                    &field!(highland_ctrl_o_gallery),
+                    &[
+                        (false, tr!("ui-appearance-outfits"), true),
+                        (true, tr!("ui-appearance-outfit-gallery"), false),
+                    ],
+                );
                 look(
                     cx,
                     tr!("ui-options-aurora-restart-alert"),
@@ -533,8 +543,8 @@ fn system_folders(cx: &mut Cx) {
     }
     cx.group("Empty folders", |cx| {
         cx.toggle(
-            "Hide empty folders",
-            "Folders with nothing in them, system folders included, are left out of your inventory",
+            "Hide empty system folders",
+            "System folders with nothing in them are left out of your inventory (your own folders always show, and Rubbish too)",
             &field!(inventory.hide_empty_folders),
         );
     });

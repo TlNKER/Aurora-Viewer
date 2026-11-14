@@ -5036,7 +5036,15 @@ impl App {
             Action::ContactSets => self.people_tab_shortcut(ui::people::TAB_SETS),
             Action::Inventory => ui::widgets::toggle_floater(&self.egui_ctx, "inventory", &mut self.panels.inventory),
             Action::NewInventoryWindow => self.inventory_ui.open_additional_window(&self.egui_ctx),
-            Action::Appearance => ui::widgets::toggle_floater(&self.egui_ctx, "appearance", &mut self.panels.appearance),
+            Action::Appearance => {
+                // Highland: opening it, the tab chosen in Preferences ›
+                // Highland › World and interface (Outfit gallery or Outfits)
+                if !self.panels.appearance {
+                    let tab = if self.settings.highland_ctrl_o_gallery { 0 } else { 1 };
+                    self.appearance_ui.open(tab, false);
+                }
+                ui::widgets::toggle_floater(&self.egui_ctx, "appearance", &mut self.panels.appearance);
+            }
             Action::Quit => self.request_exit(),
             Action::TextureLibrary => ui::widgets::toggle_floater(
                 &self.egui_ctx,
@@ -7279,7 +7287,14 @@ impl App {
                 let name = ui::people::radar_name(&self.world, &id, s.name_format);
                 self.world
                     .keyword_alert(id, &name, &text, true, crate::world::attention::Open::NearbyChat);
-                self.world.system_message(format!("secondlife:///app/agent/{id}/about {text}"));
+                let line = format!("secondlife:///app/agent/{id}/about {text}");
+                // Highland: entering or leaving chat range, draw distance or
+                // the region leaves no unread mark on Nearby chat
+                if matches!(event, Event::AgeAlert(..)) {
+                    self.world.system_message(line);
+                } else {
+                    self.world.quiet_system_message(line);
+                }
             }
         }
     }
@@ -17461,11 +17476,6 @@ impl App {
                     self.settings.build.highland_small_prims = true;
                     self.settings.build.new_prim_size = [0.2; 3];
                     self.settings.save();
-                }
-                // Highland: a gift noted in the giver's conversation opens it
-                if let Some(session) = self.world.social.highland_open_im.take() {
-                    self.world.social.focus_im = Some(session);
-                    ui::notifications::open_conversations(&self.egui_ctx, &mut self.panels.chat);
                 }
                 // Highland: Preferences › Highland › System Folders
                 ui::inventory::hidden_folders::sync(

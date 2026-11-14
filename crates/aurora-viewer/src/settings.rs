@@ -797,6 +797,10 @@ pub struct Settings {
     /// The Appearance tab shown at exit (gallery, outfit list, worn), shown
     /// again at the next start, as the Legacy Viewer's `LastAppearanceTab`.
     pub appearance_tab: u8,
+    /// Highland: Ctrl+O opens the Appearance window on the Outfit gallery
+    /// (on) or on the Outfits list (off). Preferences › Highland › World and
+    /// interface › Interface.
+    pub highland_ctrl_o_gallery: bool,
     pub show_ao: bool,
     /// Loading / teleport screens show the last view, blurred.
     pub loading_backdrop: bool,
@@ -2197,6 +2201,7 @@ impl Default for Settings {
             show_appearance: false,
             appearance_fill_previews: false,
             appearance_tab: 0,
+            highland_ctrl_o_gallery: false,
             show_ao: false,
             ao: Default::default(),
             bridge: Default::default(),

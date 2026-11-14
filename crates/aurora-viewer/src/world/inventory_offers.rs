@@ -302,7 +302,8 @@ impl World {
             // are independent; either enables UISndInventoryOffer, once.
             if self.inventory_offers.auto_accept_chat {
                 // Highland: a resident's gift is noted in the conversation
-                // with them (opened, unread), not in the nearby chat
+                // with them as a system line, "X gave you Y." (unread; the
+                // window is not opened), not in the nearby chat
                 let from = im.from_agent_id;
                 let resident = im.dialog == super::notifications::im::INVENTORY_OFFERED
                     && !im.from_group
@@ -313,9 +314,17 @@ impl World {
                         self.social.names.entry(from).or_insert_with(|| im.from_name.clone());
                     }
                     self.social.session_mut(from);
-                    let line = self.notice_line(text.clone());
+                    let gave = aurora_i18n::tr!(
+                        "highland-gave-you",
+                        name = super::teleport_invites::agent_link(from),
+                        item = if im.message.is_empty() {
+                            item_label(&im.message)
+                        } else {
+                            dialog_names::shown(&im.message).to_string()
+                        }
+                    );
+                    let line = self.notice_line(gave);
                     self.conversation_card(from, line);
-                    self.social.highland_open_im = Some(from);
                 } else {
                     self.system_notice(text.clone(), super::notice_topics::Topic::Items);
                 }

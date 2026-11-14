@@ -353,8 +353,8 @@ pub struct InventoryPreferences {
     /// Highland: the system folders hidden from the trees, by the names of
     /// `hidden_folders::HIDEABLE` (Preferences › Highland › System Folders).
     pub hidden_system_folders: Vec<String>,
-    /// Highland: folders with no item anywhere inside (system folders too)
-    /// are left out of the trees; on by default.
+    /// Highland: system folders with no item anywhere inside are left out
+    /// of the trees (your own folders always show); on by default.
     pub hide_empty_folders: bool,
     pub show_recent: bool,
     pub show_worn: bool,
@@ -580,9 +580,9 @@ pub struct ViewCache {
     /// Highland: the root's folders that System Folders can hide, and
     /// their bit (`hidden_folders::folder_bit`).
     hideable: IdMap<u32>,
-    /// Highland: the folders that hold an item somewhere inside, or a
-    /// folder not loaded yet (it may: it stays until its contents are known).
-    filled: IdSet,
+    /// Highland: the system folders (at the root, Rubbish aside) with no
+    /// item anywhere inside, all loaded: Hide empty folders leaves them out.
+    empty_system: IdSet,
     /// A folder's date: its newest descendant's (see `prepare`).
     folder_dates: IdMap<i64>,
     revision: u64,
@@ -727,7 +727,14 @@ impl ViewCache {
                 id = f.info.parent;
             }
         }
-        self.filled = filled;
+        self.empty_system = inv
+            .folders
+            .iter()
+            .filter(|(id, f)| {
+                f.info.parent == inv.root && f.info.type_default >= 0 && f.info.type_default != 14 && !filled.contains(*id)
+            })
+            .map(|(id, _)| *id)
+            .collect();
         self.hideable = inv
             .folders
             .iter()
@@ -785,8 +792,8 @@ impl ViewCache {
             .filter(move |id| show_library || **id != lib_root)
             // Highland: the system folders hidden in Preferences
             .filter(move |id| hidden == 0 || self.hideable.get(id).is_none_or(|b| hidden & (1u64 << b) == 0))
-            // Highland: empty folders, system folders included
-            .filter(move |id| !hide_empty || !self.folders.contains(*id) || self.filled.contains(*id))
+            // Highland: empty system folders
+            .filter(move |id| !hide_empty || !self.empty_system.contains(*id))
             .copied()
     }
 

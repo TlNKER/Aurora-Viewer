@@ -2171,6 +2171,21 @@ impl World {
         self.push_chat(line);
     }
 
+    /// Highland: a notice in the nearby chat that is never unread (the
+    /// radar's comings and goings): no "1" on Nearby chat.
+    pub fn quiet_system_message(&mut self, text: impl Into<String>) {
+        let line = ChatLine {
+            time: SystemTime::now(),
+            from: String::new(),
+            text: text.into(),
+            kind: ChatKind::System,
+            source: Uuid::nil(),
+            origin: Origin::Live,
+        };
+        self.notice_topics.note(&line, notice_topics::Topic::Info);
+        self.nearby_push(line);
+    }
+
     /// A notice of the viewer in a conversation (a call, an automatic
     /// reply), about `topic`, never unread.
     pub fn conversation_notice(&mut self, session: Uuid, text: impl Into<String>, topic: notice_topics::Topic) {
