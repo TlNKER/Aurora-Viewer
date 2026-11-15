@@ -781,6 +781,12 @@ fn status_dot(ui: &mut egui::Ui, p: &Palette, status: crate::world::status::Stat
     });
 }
 
+/// Highland: the status dot and its menu, for Highland Chat's strip
+/// (`app/highland_chat.rs`).
+pub fn highland_status_dot(ui: &mut egui::Ui, p: &Palette, status: crate::world::status::StatusModes, action: &mut BarAction) {
+    status_dot(ui, p, status, action);
+}
+
 /// The tooltip of the status: its name, what invisible means, the refusals.
 fn status_tip(status: &crate::world::status::StatusModes) -> String {
     let mut tip = aurora_i18n::tr!("ui-bars-status", value0 = status_name(status).to_string());

@@ -577,6 +577,8 @@ pub enum CtxAction {
     PinGroup(Uuid),
     /// Highland: pin a friend on top of the friends list, or unpin them.
     PinFriend(Uuid),
+    /// Highland: hide a group in People › Groups, or show it again.
+    HideGroup(Uuid),
     LeaveGroup(Uuid),
     /// Block / unblock a group's chat (exoGroupMuteList).
     GroupChatBlocked(Uuid, bool),
@@ -1179,6 +1181,16 @@ pub fn group_menu(ui: &mut egui::Ui, p: &Palette, world: &World, id: Uuid) {
     };
     if menu::item(ui, p, "pin-filled", pin) {
         act(CtxAction::PinGroup(id));
+    }
+    // Highland: hidden groups are listed folded at the bottom of People ›
+    // Groups
+    let (icon, hide) = if world.social.highland_hidden_groups.contains(&id) {
+        ("eye-filled", aurora_i18n::tr!("highland-show-group"))
+    } else {
+        ("eye-off", aurora_i18n::tr!("highland-hide-group"))
+    };
+    if menu::item(ui, p, icon, hide) {
+        act(CtxAction::HideGroup(id));
     }
     let blocked = world.mutes.group_chat_muted(&id);
     if menu::check(ui, p, "message-off", aurora_i18n::tr!("ui-context-block-group-chat"), blocked, true) {

@@ -33,6 +33,9 @@ pub struct Cli {
     /// `--uninstall`: remove what the viewer registered on this computer,
     /// print what it did and exit, without a window (`uninstall.rs`).
     pub uninstall: bool,
+    /// Highland: `--chat`: Highland Chat, the chat-only way to start
+    /// (`app/highland_chat.rs`).
+    pub highland_chat: bool,
     help: bool,
     version: bool,
 }
@@ -104,6 +107,9 @@ fn parse(args: impl Iterator<Item = String>) -> Cli {
             cli.version = true;
         } else if a == "--uninstall" {
             cli.uninstall = true;
+        } else if a == "--chat" {
+            // Highland: Highland Chat
+            cli.highland_chat = true;
         } else if let Some(value) = a.strip_prefix("--language=") {
             cli.language = Some(value.to_owned());
         } else if a == "--language" {
@@ -211,13 +217,30 @@ fn parse_fps_limit(value: &str) -> Option<u32> {
 pub fn window_title() -> String {
     // Highland: just the name, no version or build profile
     if HIGHLAND_PLAIN_TITLE {
-        return "Highland".to_owned();
+        return if highland_chat() { "Highland Chat" } else { "Highland" }.to_owned();
     }
     title_with(get().title.as_deref(), env!("AURORA_BUILD_PROFILE"), aurora_version::version())
 }
 
 /// Highland: the window's title is only "Highland".
 const HIGHLAND_PLAIN_TITLE: bool = true;
+
+/// Highland: started as Highland Chat (`--chat`, or a program named
+/// `highland-chat`): the chat-only mode of `app/highland_chat.rs`.
+pub fn highland_chat() -> bool {
+    static CHAT: OnceLock<bool> = OnceLock::new();
+    *CHAT.get_or_init(|| {
+        get().highland_chat
+            || std::env::current_exe()
+                .ok()
+                .and_then(|exe| exe.file_stem().map(|s| s.to_string_lossy().to_ascii_lowercase()))
+                .is_some_and(|stem| stem == HIGHLAND_CHAT_PROGRAM)
+    })
+}
+
+/// Highland: the program name that starts Highland Chat without `--chat`
+/// (a copy of the program, `highland-chat.exe`).
+const HIGHLAND_CHAT_PROGRAM: &str = "highland-chat";
 
 /// The viewer's identity on the Linux desktop: Wayland app_id, X11
 /// WM_CLASS, and the name of `packaging/linux/aurora-viewer.desktop`, whose

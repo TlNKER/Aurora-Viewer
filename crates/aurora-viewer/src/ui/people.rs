@@ -212,6 +212,9 @@ pub struct FriendsSettings {
     /// Highland: the offline friends folded under their heading (a click
     /// on "OFFLINE · N" folds or unfolds them); kept between sessions.
     pub highland_offline_folded: bool,
+    /// Highland: the hidden groups unfolded under "HIDDEN · N" at the bottom
+    /// of People › Groups; kept between sessions.
+    pub highland_hidden_groups_open: bool,
 }
 
 impl Default for FriendsSettings {
@@ -224,6 +227,7 @@ impl Default for FriendsSettings {
             pictures: true,
             permissions: true,
             highland_offline_folded: false,
+            highland_hidden_groups_open: false,
         }
     }
 }

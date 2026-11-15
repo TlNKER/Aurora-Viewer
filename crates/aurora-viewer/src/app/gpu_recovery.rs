@@ -23,7 +23,12 @@ impl App {
             .with_visible(cfg!(target_os = "macos"))
             .with_active(plan.active)
             .with_inner_size(plan.size)
-            .with_min_inner_size(winit::dpi::LogicalSize::new(800, 560))
+            // Highland: Highland Chat's window may be much smaller
+            .with_min_inner_size(if crate::cli::highland_chat() {
+                winit::dpi::LogicalSize::new(super::highland_chat::HIGHLAND_CHAT_MIN.0, super::highland_chat::HIGHLAND_CHAT_MIN.1)
+            } else {
+                winit::dpi::LogicalSize::new(800, 560)
+            })
             .with_fullscreen(plan.fullscreen.clone())
             // none yet at start (it is decoded in the background)
             .with_window_icon(self.window_icon.clone());

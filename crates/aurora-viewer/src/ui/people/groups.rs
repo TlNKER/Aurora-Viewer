@@ -87,8 +87,25 @@ fn list(ui: &mut egui::Ui, c: &mut Ctx, _data: &super::RadarData, st: &mut Peopl
                     &aurora_i18n::tr!("ui-contacts-no-group-containing-was-found", value0 = query.clone()),
                 );
             }
-            for &g in &plan.items {
+            // Highland: hidden groups last, under a folded "Hidden · N"
+            let hidden = &c.world.social.highland_hidden_groups;
+            let (shown, hid): (Vec<&GroupMembership>, Vec<&GroupMembership>) =
+                plan.items.iter().copied().partition(|g| !hidden.contains(&g.id));
+            for g in shown {
                 row(ui, c, st, g);
+            }
+            if !hid.is_empty() {
+                // folded or not, kept between sessions (Preferences save)
+                let open = c.friends.highland_hidden_groups_open;
+                let title = aurora_i18n::tr!("highland-hidden-groups", count = hid.len() as i64);
+                if super::nearby::folding_header(ui, p, &title, !open).clicked() {
+                    c.friends.highland_hidden_groups_open = !open;
+                }
+                if open {
+                    for g in hid {
+                        row(ui, c, st, g);
+                    }
+                }
             }
         });
 }

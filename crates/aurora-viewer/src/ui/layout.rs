@@ -29,6 +29,11 @@ use std::sync::{Mutex, PoisonError};
 use std::time::{Duration, Instant};
 
 fn path() -> PathBuf {
+    // Highland: Highland Chat's windows are laid out in a much smaller
+    // window: their places are kept apart from the viewer's
+    if crate::cli::highland_chat() {
+        return crate::settings::config_dir().join("highland_chat_layout.ron");
+    }
     crate::settings::config_dir().join("ui_layout.ron")
 }
 

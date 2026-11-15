@@ -369,6 +369,9 @@ pub struct Floater<'a> {
     partial_outside: bool,
     /// A chat window: it stays in immersive mode (`hide_windows`).
     chat: bool,
+    /// Highland: the window is the whole work area, never minimized
+    /// (Highland Chat's Conversations, `app/highland_chat.rs`).
+    highland_fill: bool,
 }
 
 impl<'a> Floater<'a> {
@@ -404,7 +407,14 @@ impl<'a> Floater<'a> {
             cascade: None,
             partial_outside: false,
             chat: false,
+            highland_fill: false,
         }
+    }
+
+    /// Highland: the window fills the work area (see `highland_fill`).
+    pub fn highland_fill(mut self) -> Self {
+        self.highland_fill = true;
+        self
     }
 
     pub fn fixed(mut self) -> Self {
@@ -551,6 +561,10 @@ impl<'a> Floater<'a> {
             return None;
         }
         let min_id = egui::Id::unique((self.id, "minimized"));
+        // Highland: a window that fills the work area is never minimized
+        if self.highland_fill {
+            ctx.data_mut(|d| d.insert_persisted(min_id, false));
+        }
         // persisted with the UI layout (ui_layout.ron)
         let minimized = ctx.data_mut(|d| d.get_persisted::<bool>(min_id)).unwrap_or(false);
         // minimized with its compact body: sized by that body
@@ -726,6 +740,26 @@ impl<'a> Floater<'a> {
         // has in excess, title first.
         if let Some(pos) = title_in_reach(ctx, window_id, room, asked, resized.map(|r| r.size())) {
             w = w.current_pos(pos);
+        }
+        // Highland: the whole work area, inside the window's frame (its
+        // stroke, and the top margin of a flush body)
+        if self.highland_fill {
+            let m = if self.flush_body {
+                egui::Margin {
+                    left: 0,
+                    right: 0,
+                    top: 5,
+                    bottom: 0,
+                }
+            } else {
+                FLOATER_MARGIN
+            };
+            let frame = Vec2::new(
+                f32::from(m.left) + f32::from(m.right) + 2.0 * FLOATER_STROKE,
+                f32::from(m.top) + f32::from(m.bottom) + 2.0 * FLOATER_STROKE,
+            );
+            let inner = (work.size() - frame).max(Vec2::splat(1.0));
+            w = w.fixed_size(inner).current_pos(work.min).constrain(false);
         }
         // `steady_size`: once shown, the body in the window's exact rect
         let held = self.steady_size && resizable && egui::AreaState::load(ctx, window_id).is_some_and(|s| s.size.is_some());

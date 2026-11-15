@@ -85,7 +85,8 @@ impl App {
     /// The 3D drawing pauses: behind past the driver's memory budget
     /// (texture_budget::Background), or behind on a busy card (this module).
     pub(super) fn drawing_paused(&self) -> bool {
-        self.scene.textures.drawing_paused() || self.busy_pause.paused()
+        // Highland: Highland Chat never draws the world (`app/highland_chat.rs`)
+        self.scene.textures.drawing_paused() || self.busy_pause.paused() || (crate::cli::highland_chat() && self.in_world())
     }
 
     /// Every frame, after the render: the pause follows the GPU time.

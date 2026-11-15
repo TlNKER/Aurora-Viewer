@@ -34,6 +34,8 @@ mod audio_mute;
 mod avatar_render_settings;
 mod bridge;
 mod busy_pause;
+// Highland: Highland Chat, the chat-only mode
+mod highland_chat;
 mod movelock;
 mod particle_editor;
 mod portals;
@@ -4966,6 +4968,18 @@ impl App {
         if !pressed || !self.in_world() {
             return;
         }
+        // Highland: Highland Chat keeps only the shortcuts that do not act
+        // in the world: Quit and Preferences
+        if crate::cli::highland_chat() {
+            match action {
+                Some(Action::Quit) => self.request_exit(),
+                Some(Action::Preferences) => {
+                    ui::widgets::toggle_floater(&self.egui_ctx, ui::options::WINDOW, &mut self.panels.settings);
+                }
+                _ => {}
+            }
+            return;
+        }
         // push-to-talk key in toggle mode: each press switches the microphone
         if !self.settings.audio.mic_hold && self.settings.keybinds.held_actions_of(&input).contains(&Action::PushToTalk) {
             self.toggle_mic();
@@ -5223,6 +5237,10 @@ impl App {
 
     /// Left press on the world, past the build tools (LLToolPie).
     fn on_left_press(&mut self) {
+        // Highland: Highland Chat has no world to click
+        if crate::cli::highland_chat() {
+            return;
+        }
         self.click(click_pick::Click::World);
     }
 
@@ -6549,7 +6567,8 @@ impl App {
     }
 
     fn update_audio(&mut self) {
-        let in_world = self.in_world();
+        // Highland: no parcel music in Highland Chat
+        let in_world = self.in_world() && !crate::cli::highland_chat();
         if in_world {
             self.parcel_music.update(
                 self.world.parcel.as_ref().map(|parcel| parcel.music_url.as_str()),
@@ -6614,7 +6633,8 @@ impl App {
                 let fade = if *ch == aurora_audio::Channel::Music { gain } else { 1.0 };
                 engine.set_volume(*ch, a.volume[i] * fade);
                 engine.set_muted(*ch, a.muted[i] || (i == 0 && self.minimized_mute.active));
-                engine.set_enabled(*ch, i == 0 || a.enabled[i]);
+                // Highland: Highland Chat keeps the world's own sounds off
+                engine.set_enabled(*ch, i == 0 || (a.enabled[i] && !highland_chat::mutes(*ch)));
             }
             self.applied_audio = Some(a.clone());
             self.music_fade_gain = gain;
@@ -6816,6 +6836,9 @@ impl App {
             .gfx
             .as_ref()
             .filter(|g| forced_window_size().is_none() && g.window.fullscreen().is_none())
+            // Highland: Highland Chat's own geometry is kept as it changes
+            // (record_window_geometry), never in the viewer's
+            .filter(|_| !crate::cli::highland_chat())
         {
             self.settings.window_maximized = g.window.is_maximized();
             // when maximized, keep the restored size / position recorded below
@@ -6895,6 +6918,12 @@ impl App {
             return;
         }
         let sf = g.window.scale_factor();
+        // Highland: Highland Chat keeps its own size and place
+        if crate::cli::highland_chat() {
+            let at = g.window.outer_position().ok().map(|p| (p.x, p.y));
+            self.highland_chat_record((s.width as f64 / sf) as u32, (s.height as f64 / sf) as u32, at);
+            return;
+        }
         self.settings.window_width = (s.width as f64 / sf) as u32;
         self.settings.window_height = (s.height as f64 / sf) as u32;
         if let Ok(p) = g.window.outer_position() {
@@ -6908,7 +6937,9 @@ impl App {
     /// full screen the system entered or left by itself (the macOS green
     /// button, a window manager's rule) is left alone.
     fn apply_fullscreen_setting(&mut self) {
-        if self.capture.is_some() || forced_window_size().is_some() {
+        // Highland: Highland Chat stays a window (the setting is the viewer's)
+        if self.capture.is_some() || forced_window_size().is_some() || crate::cli::highland_chat() {
+            self.fullscreen_applied = self.settings.window_fullscreen;
             return;
         }
         let Some(window) = self.gfx.as_ref().map(|g| g.window.clone()) else {
@@ -7946,6 +7977,10 @@ impl App {
     /// Right button: orbit drag, context menu on a click, and walking forward
     /// while steering with the left button (a double click runs).
     fn on_right_button(&mut self, pressed: bool, over_ui: bool) {
+        // Highland: Highland Chat has no world to orbit or open menus on
+        if crate::cli::highland_chat() {
+            return;
+        }
         if self.hud_drag.is_some() {
             return;
         }
@@ -8021,7 +8056,8 @@ impl App {
     /// Wheel clicks on the world (SL sign: positive zooms out): the held
     /// mouselook zoom's angle, or the camera's own use of the wheel.
     fn camera_wheel(&mut self, clicks: f32) {
-        if self.avatar_studio.active && !self.viewfinder_on() {
+        // Highland: Highland Chat has no camera to zoom
+        if (self.avatar_studio.active && !self.viewfinder_on()) || crate::cli::highland_chat() {
             return;
         }
         if clicks > 0.0 && self.vr_mode == Some(crate::camera::VrView::FirstPerson) {
@@ -8604,7 +8640,8 @@ impl App {
     }
 
     fn update_move_input(&mut self, typing: bool, dt: f32) {
-        if (self.avatar_studio.active && !self.viewfinder_on()) || self.studio_transition.busy() {
+        // Highland: nothing moves the avatar in Highland Chat
+        if (self.avatar_studio.active && !self.viewfinder_on()) || self.studio_transition.busy() || crate::cli::highland_chat() {
             self.input = MoveInput::default();
             return;
         }
@@ -10816,7 +10853,8 @@ impl App {
         let in_world = self.in_world();
         if in_world {
             self.step_draw_distance();
-            self.scene.draw_distance = self.settings.draw_distance;
+            // Highland: Highland Chat's short view (`agent_far`)
+            self.scene.draw_distance = self.agent_far();
             self.scene.synchronize_animations = self.settings.synchronize_animations;
             self.scene.ground_avatar_feet = self.settings.ground_avatar_feet;
             self.scene.ground_feet_while_moving = self.settings.ground_feet_while_moving;
@@ -17039,7 +17077,8 @@ impl App {
                     return a;
                 }
                 // a held photo (freeze frame) instead of the world, under the windows
-                let held = self.photo_held(&ctx, &p);
+                // Highland: nor in Highland Chat (no world drawn)
+                let held = self.photo_held(&ctx, &p) || self.highland_chat();
                 // what belongs to the world first: the HUD attachments, the bars and
                 // every window cover the name tags, the floating texts and the beacon
                 let voice_levels = if self.demo {
@@ -17179,21 +17218,28 @@ impl App {
                 if let Some(action) = self.draw_hover_tips(&ctx, &p, !self.camera.mouselook() && !held) {
                     a.ctx_action = Some(action);
                 }
-                ui::sky_beacons::draw(
-                    &ctx,
-                    &p,
-                    &self.world,
-                    projector,
-                    [self.settings.sun_beacon, self.settings.moon_beacon],
-                );
-                ui::beacons::draw(&ctx, &p, projector, &self.scene.beacon_markers, &self.settings.beacons);
-                ui::portals::labels(&ctx, &p, &self.world, projector);
+                // Highland: none of the world's marks in Highland Chat
+                if !self.highland_chat() {
+                    ui::sky_beacons::draw(
+                        &ctx,
+                        &p,
+                        &self.world,
+                        projector,
+                        [self.settings.sun_beacon, self.settings.moon_beacon],
+                    );
+                    ui::beacons::draw(&ctx, &p, projector, &self.scene.beacon_markers, &self.settings.beacons);
+                    ui::portals::labels(&ctx, &p, &self.world, projector);
+                }
                 aurora_render::end_world_labels(&ctx);
-                ui::hud::draw_attachments(&ctx, &self.world, &self.scene);
+                if !self.highland_chat() {
+                    ui::hud::draw_attachments(&ctx, &self.world, &self.scene);
+                }
                 if self.demo && crate::demo::floating_text::scenario() {
                     crate::demo::floating_text::guides(&ctx, &self.world, &self.scene);
                 }
                 t = self.ui_parts.lap(Part::UiTags, t);
+                // Highland: Highland Chat's strip at the top, instead of the bars
+                let highland_room = self.highland_chat().then(|| self.highland_chat_strip(&ctx, &p, &mut a));
                 let parcel_landmark = self.parcel_landmark();
                 self.follow_favorites_access();
                 let favorites_shown = ui::bars::favorites::take_shown(&ctx);
@@ -17399,23 +17445,28 @@ impl App {
                 // brings the islands back) and in mouselook, like Firestorm's
                 let screen_rect = ctx.content_rect();
                 let demo_hidden = if self.demo { ui::bars::demo::get().hidden } else { None };
-                let chrome = self.interface.bars(&ui::interface::Frame {
-                    classic: classic_bars,
-                    mouselook: self.camera.mouselook(),
-                    show_in_mouselook: self.settings.camera.show_interface_in_mouselook,
-                    chat_active: self.chat_ui.in_use(),
-                    // AURORA_DEMO_BARS=peek: the pointer at the top edge
-                    pointer: if demo_hidden == Some(true) {
-                        Some(egui::pos2(screen_rect.center().x, screen_rect.top()))
-                    } else {
-                        ctx.input(|i| i.pointer.hover_pos())
-                    },
-                    screen: screen_rect,
-                    top_rows: ui::bars::islands::favorites_row_bottom(&ctx)
-                        .unwrap_or(screen_rect.top() + ui::bars::islands::MARGIN + ui::bars::islands::HEIGHT),
-                    bottom_top: self.interface.last_room.map_or(screen_rect.bottom() - 56.0, |(_, bottom)| bottom),
-                    menu_open: egui::Popup::is_any_open(&ctx),
-                });
+                // Highland: no bars in Highland Chat (its strip instead)
+                let chrome = if self.highland_chat() {
+                    ui::interface::Shown { top: false, bottom: false }
+                } else {
+                    self.interface.bars(&ui::interface::Frame {
+                        classic: classic_bars,
+                        mouselook: self.camera.mouselook(),
+                        show_in_mouselook: self.settings.camera.show_interface_in_mouselook,
+                        chat_active: self.chat_ui.in_use(),
+                        // AURORA_DEMO_BARS=peek: the pointer at the top edge
+                        pointer: if demo_hidden == Some(true) {
+                            Some(egui::pos2(screen_rect.center().x, screen_rect.top()))
+                        } else {
+                            ctx.input(|i| i.pointer.hover_pos())
+                        },
+                        screen: screen_rect,
+                        top_rows: ui::bars::islands::favorites_row_bottom(&ctx)
+                            .unwrap_or(screen_rect.top() + ui::bars::islands::MARGIN + ui::bars::islands::HEIGHT),
+                        bottom_top: self.interface.last_room.map_or(screen_rect.bottom() - 56.0, |(_, bottom)| bottom),
+                        menu_open: egui::Popup::is_any_open(&ctx),
+                    })
+                };
                 if chrome.top {
                     let (bar, audio_action) = ui::bars::top_bars(
                         ui,
@@ -17675,25 +17726,30 @@ impl App {
                     area.min.y = area.min.y.max(row + ui::bars::islands::MARGIN);
                 }
                 // the left and right toolbars, and the windows beside them
-                let sides = self.interface.sides(
-                    &ui::interface::Frame {
-                        classic: classic_bars,
-                        mouselook: self.camera.mouselook(),
-                        show_in_mouselook: self.settings.camera.show_interface_in_mouselook,
-                        chat_active: false,
-                        // AURORA_DEMO_BARS=peekleft: the pointer at the left edge
-                        pointer: if self.demo && ui::bars::demo::get().peek_left {
-                            Some(egui::pos2(screen_rect.left(), screen_rect.center().y))
-                        } else {
-                            ctx.input(|i| i.pointer.hover_pos())
+                // Highland: nor the side toolbars
+                let sides = if crate::cli::highland_chat() {
+                    [false, false]
+                } else {
+                    self.interface.sides(
+                        &ui::interface::Frame {
+                            classic: classic_bars,
+                            mouselook: self.camera.mouselook(),
+                            show_in_mouselook: self.settings.camera.show_interface_in_mouselook,
+                            chat_active: false,
+                            // AURORA_DEMO_BARS=peekleft: the pointer at the left edge
+                            pointer: if self.demo && ui::bars::demo::get().peek_left {
+                                Some(egui::pos2(screen_rect.left(), screen_rect.center().y))
+                            } else {
+                                ctx.input(|i| i.pointer.hover_pos())
+                            },
+                            screen: screen_rect,
+                            top_rows: 0.0,
+                            bottom_top,
+                            menu_open: egui::Popup::is_any_open(&ctx),
                         },
-                        screen: screen_rect,
-                        top_rows: 0.0,
-                        bottom_top,
-                        menu_open: egui::Popup::is_any_open(&ctx),
-                    },
-                    ui::bars::side::edges(&ctx),
-                );
+                        ui::bars::side::edges(&ctx),
+                    )
+                };
                 let side_row = ui::bars::Row {
                     unread: if demo_bars.read { 0 } else { self.world.conversations_badge() },
                     latest_unread: self.world.social.latest_unread(),
@@ -17745,6 +17801,11 @@ impl App {
                 // windows move over the whole screen; the Legacy Viewer's
                 // bars are full width, the windows stay between them
                 ui::layout::set_move_area(ui.ctx(), if classic_bars { area } else { ui.ctx().content_rect() });
+                // Highland: the room under Highland Chat's strip
+                if let Some(room) = highland_room {
+                    ui::layout::set_work_area(ui.ctx(), room);
+                    ui::layout::set_move_area(ui.ctx(), room);
+                }
                 let mut edges = ui::layout::Edges {
                     left: self.settings.windows_stop_left,
                     right: self.settings.windows_stop_right,
@@ -19877,6 +19938,11 @@ impl ApplicationHandler for App {
         // captures keep a fixed, predictable window
         let capture = self.capture.is_some();
         let (mut w, mut h) = (self.settings.window_width.max(800), self.settings.window_height.max(600));
+        // Highland: Highland Chat opens at its own size and place
+        let chat_window = self.highland_chat_geometry();
+        if let Some((cw, ch, _)) = chat_window {
+            (w, h) = (cw, ch);
+        }
         // (a forced size is placed like a capture's window: not where the
         // last session was, not maximized)
         let forced = forced_window_size();
@@ -19887,7 +19953,11 @@ impl ApplicationHandler for App {
         let mut pos = None;
         let mut monitor = event_loop.primary_monitor();
         // last position, only if it is still on a connected screen
-        if let (Some(x), Some(y), false) = (self.settings.window_x, self.settings.window_y, capture) {
+        let (last_x, last_y) = match chat_window {
+            Some((_, _, at)) => (at.map(|a| a.0), at.map(|a| a.1)),
+            None => (self.settings.window_x, self.settings.window_y),
+        };
+        if let (Some(x), Some(y), false) = (last_x, last_y, capture) {
             let on = event_loop.available_monitors().find(|m| {
                 let (p, s) = (m.position(), m.size());
                 // the title bar (top-left corner area) must be reachable
@@ -19918,7 +19988,7 @@ impl ApplicationHandler for App {
             position: pos.map(|(x, y)| winit::dpi::PhysicalPosition::new(x, y)),
             // Automated captures must not steal the user's keyboard focus.
             active: !capture,
-            fullscreen: (!capture && forced_window_size().is_none() && self.settings.window_fullscreen)
+            fullscreen: (!capture && forced_window_size().is_none() && self.settings.window_fullscreen && chat_window.is_none())
                 .then(|| winit::window::Fullscreen::Borderless(monitor.clone())),
         };
         self.fullscreen_applied = plan.fullscreen.is_some();
@@ -20001,7 +20071,7 @@ impl ApplicationHandler for App {
         self.gfx = Some(Gfx {
             window,
             shown: false,
-            maximize_on_show: self.settings.window_maximized && !self.settings.window_fullscreen && !capture,
+            maximize_on_show: self.settings.window_maximized && !self.settings.window_fullscreen && !capture && !self.highland_chat(),
             renderer,
             egui_state,
         });
@@ -22795,7 +22865,8 @@ impl ApplicationHandler for App {
                         self.altgr_text_input(ke),
                     ))
         );
-        if fullscreen_toggle {
+        // Highland: Highland Chat has no full screen (the setting is the viewer's)
+        if fullscreen_toggle && !crate::cli::highland_chat() {
             // from what the window is: out of a system full screen (the macOS
             // green button), the first press leaves it
             let full = self

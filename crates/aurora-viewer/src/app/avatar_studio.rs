@@ -194,8 +194,9 @@ impl App {
 
     pub(super) fn studio_agent_controls(&self) -> aurora_net::AgentControls {
         self.studio_photo_session.as_ref().map_or_else(
-            || self.world.agent.controls(&self.input, &self.camera, self.settings.draw_distance),
-            |session| session.controls(&self.world.agent, &self.input, self.settings.draw_distance),
+            // Highland: the view asked of the simulator (`agent_far`)
+            || self.world.agent.controls(&self.input, &self.camera, self.agent_far()),
+            |session| session.controls(&self.world.agent, &self.input, self.agent_far()),
         )
     }
 

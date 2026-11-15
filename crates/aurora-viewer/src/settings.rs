@@ -813,6 +813,9 @@ pub struct Settings {
     pub window_x: Option<i32>,
     pub window_y: Option<i32>,
     pub window_maximized: bool,
+    /// Highland: Highland Chat's window, apart from the viewer's: width and
+    /// height (points), and its last position (outer, physical pixels).
+    pub highland_chat_window: Option<(u32, u32, Option<(i32, i32)>)>,
     /// Start in a borderless window covering the current monitor.
     pub window_fullscreen: bool,
     /// Legacy single-account authorization, read once for migration only.
@@ -2217,6 +2220,7 @@ impl Default for Settings {
             window_x: None,
             window_y: None,
             window_maximized: false,
+            highland_chat_window: None,
             window_fullscreen: false,
             mfa_hash: String::new(),
             font: crate::ui::fonts::DEFAULT.into(),
@@ -3378,6 +3382,7 @@ impl Settings {
             window_y: old.window_y,
             window_maximized: old.window_maximized,
             window_fullscreen: old.window_fullscreen,
+            highland_chat_window: old.highland_chat_window,
             // a newer build's own values are not this build's to reset
             newer_file: old.newer_file,
             // Named profiles are user content, like separate preset files.

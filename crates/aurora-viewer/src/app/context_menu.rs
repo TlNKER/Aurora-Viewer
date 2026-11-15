@@ -956,6 +956,7 @@ impl App {
             CtxAction::ActivateGroup(id) => self.send(NetCommand::ActivateGroup(id)),
             CtxAction::PinGroup(id) => self.world.groups.toggle_favorite(id),
             CtxAction::PinFriend(id) => self.world.social.toggle_pinned(id),
+            CtxAction::HideGroup(id) => self.world.social.toggle_hidden_group(id),
             CtxAction::LeaveGroup(id) => self.contacts_ui.ask_leave_group(id),
             CtxAction::GroupChat(id) => {
                 self.world.ui_sounds.push(UiSound::StartIm);

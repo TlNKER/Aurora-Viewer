@@ -75,10 +75,16 @@ pub struct Social {
     /// kept in the account's `pinned_friends.json`.
     pub highland_pinned: std::collections::HashSet<Uuid>,
     highland_pinned_path: Option<std::path::PathBuf>,
+    /// Highland: the groups hidden in People › Groups (listed folded at the
+    /// bottom), `hidden_groups.json` of the account.
+    pub highland_hidden_groups: std::collections::HashSet<Uuid>,
+    highland_hidden_groups_path: Option<std::path::PathBuf>,
 }
 
 /// Highland: the account's pinned friends.
 pub const PINNED_FRIENDS_FILE: &str = "pinned_friends.json";
+/// Highland: the groups hidden in People › Groups.
+pub const HIDDEN_GROUPS_FILE: &str = "hidden_groups.json";
 
 /// How long a resident's "is typing" lasts without a new start
 /// (OTHER_TYPING_TIMEOUT, fsfloaterim.cpp).
@@ -138,6 +144,36 @@ impl Social {
             && let Err(e) = std::fs::write(path, json)
         {
             log::warn!("pinned friends not saved ({e}): {}", path.display());
+        }
+    }
+
+    /// Highland: the hidden groups, read at login.
+    pub fn load_hidden_groups(&mut self, path: std::path::PathBuf) {
+        self.highland_hidden_groups = std::fs::read(&path)
+            .ok()
+            .and_then(|b| serde_json::from_slice::<Vec<Uuid>>(&b).ok())
+            .map(|v| v.into_iter().collect())
+            .unwrap_or_default();
+        self.highland_hidden_groups_path = Some(path);
+    }
+
+    /// Highland: hide a group in People › Groups, or show it again.
+    pub fn toggle_hidden_group(&mut self, id: Uuid) {
+        if !self.highland_hidden_groups.remove(&id) {
+            self.highland_hidden_groups.insert(id);
+        }
+        let Some(path) = &self.highland_hidden_groups_path else {
+            return;
+        };
+        let mut ids: Vec<Uuid> = self.highland_hidden_groups.iter().copied().collect();
+        ids.sort();
+        if let Some(dir) = path.parent() {
+            let _ = std::fs::create_dir_all(dir);
+        }
+        if let Ok(json) = serde_json::to_vec_pretty(&ids)
+            && let Err(e) = std::fs::write(path, json)
+        {
+            log::warn!("hidden groups not saved ({e}): {}", path.display());
         }
     }
 
