@@ -8,7 +8,9 @@
 //!   (`Settings::highland_chat_window`) and its own window layout file
 //!   (`ui/layout.rs`), never full screen or maximized;
 //! - the 3D is never drawn: empty draw lists and the smallest targets, the
-//!   pause of a busy card (`App::drawing_paused`);
+//!   pause of a busy card (`App::drawing_paused`), hidden under an opaque
+//!   backdrop (the windows' see-through looks show nothing behind them),
+//!   and the frame rate held low (`frame_cap`);
 //! - the simulator is asked for the shortest view (`agent_far`), so little of
 //!   the region is sent;
 //! - nothing moves the avatar, picks, orbits or zooms in the world, and the
@@ -20,14 +22,26 @@
 use super::*;
 
 /// Highland: the view distance asked of the simulator in Highland Chat, in
-/// metres: the least the Legacy Viewer offers (RenderFarClip, 32).
-pub(super) const HIGHLAND_CHAT_FAR: f32 = 32.0;
+/// metres: well under the least the Legacy Viewer offers (RenderFarClip,
+/// 32), so the region sends little more than what is right around us.
+/// Chat, IMs and the avatars' list do not depend on it.
+pub(super) const HIGHLAND_CHAT_FAR: f32 = 8.0;
+/// Highland: Highland Chat's frame rate, in front and behind other windows
+/// (a chat window needs no more; less work for the processor).
+const HIGHLAND_CHAT_FPS: (f32, f32) = (30.0, 10.0);
 /// Highland: Highland Chat's window the first time (points).
 const HIGHLAND_CHAT_SIZE: (u32, u32) = (480, 760);
 /// Highland: Highland Chat's smallest window (points).
 pub(super) const HIGHLAND_CHAT_MIN: (u32, u32) = (360, 480);
 /// Highland: the height of the strip over Conversations (points).
 const HIGHLAND_CHAT_STRIP: f32 = 34.0;
+
+/// Highland: Highland Chat's frame rate cap, under the viewer's own (`cap`,
+/// 0 for none).
+pub(super) fn frame_cap(cap: f32, focused: bool) -> f32 {
+    let limit = if focused { HIGHLAND_CHAT_FPS.0 } else { HIGHLAND_CHAT_FPS.1 };
+    if cap > 0.0 { cap.min(limit) } else { limit }
+}
 
 /// Highland: the world's own sounds, kept off in Highland Chat (the
 /// interface sounds and voice stay).
@@ -84,9 +98,13 @@ impl App {
         let name = self.world.own_name();
         let mut action = ui::bars::BarAction::None;
         let mut people = false;
+        // an opaque backdrop under every window: the paused world's sky
+        // never shows through a window's see-through look nor around it
+        ctx.layer_painter(egui::LayerId::background()).rect_filled(screen, 0.0, p.navy);
         egui::Area::new(egui::Id::unique("highland-chat-strip"))
             .fixed_pos(strip.min)
-            .order(egui::Order::Background)
+            // over the backdrop (the background layer), with the windows
+            .order(egui::Order::Middle)
             .show(ctx, |ui| {
                 ui.set_min_size(strip.size());
                 ui.set_max_size(strip.size());

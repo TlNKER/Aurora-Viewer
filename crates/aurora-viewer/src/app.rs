@@ -12930,6 +12930,12 @@ impl App {
             timed,
             crate::cli::get().fps_limit,
         );
+        // Highland: Highland Chat draws slowly (app/highland_chat.rs)
+        let cap = if crate::cli::highland_chat() {
+            highland_chat::frame_cap(cap, self.focused)
+        } else {
+            cap
+        };
         // another viewer in front on this card: a window behind draws slowly
         // (instances.rs)
         let cap = crate::instances::throttle(
