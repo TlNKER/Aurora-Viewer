@@ -16,9 +16,9 @@ pub fn page(cx: &mut Cx) {
             &field!(world_mouse_walk),
         );
         cx.toggle(
-            tr!("ui-options-left-drag-avatar-moves-camera"),
-            tr!("ui-options-left-drag-avatar-moves-camera-help"),
-            &field!(left_drag_avatar_moves_camera),
+            tr!("ui-options-mmo-mouse-buttons"),
+            tr!("ui-options-mmo-mouse-buttons-help"),
+            &field!(mmo_mouse_buttons),
         );
         // "Double-click on land" (double_click_action_combo)
         let choices: Vec<(crate::autopilot::DoubleClick, &str)> =
