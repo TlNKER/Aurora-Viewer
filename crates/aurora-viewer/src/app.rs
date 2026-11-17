@@ -5360,6 +5360,12 @@ impl App {
             }
             // Highland: Alt+N, as World › About Land
             Action::AboutLand => self.panels.about_land = true,
+            // Highland: Ctrl+N opens or closes Favorite Wearables
+            Action::WearableFavorites => ui::widgets::toggle_floater(
+                &self.egui_ctx,
+                ui::appearance::wearable_favorites::WINDOW,
+                &mut self.panels.wearable_favorites,
+            ),
             Action::ToggleDnd => {
                 // Highland: Do Not Disturb, or back to Available
                 let dnd = !self.world.status.dnd;

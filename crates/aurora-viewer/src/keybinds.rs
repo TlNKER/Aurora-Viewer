@@ -399,6 +399,8 @@ pub enum Action {
     NewInventoryWindow,
     /// Me › Outfits (CustomizeAvatar, Ctrl+O): the Appearance window.
     Appearance,
+    /// Highland: the Favorite Wearables window (Ctrl+N).
+    WearableFavorites,
     /// Me › Exit (File.Quit, Ctrl+Q).
     Quit,
     Gestures,
@@ -613,6 +615,7 @@ pub fn sections() -> &'static Vec<(&'static str, Vec<(Action, &'static str)>)> {
                     (Action::Inventory, aurora_i18n::tr!("common-inventory")),
                     (Action::NewInventoryWindow, aurora_i18n::tr!("inventory-additional-window")),
                     (Action::Appearance, aurora_i18n::tr!("common-appearance")),
+                    (Action::WearableFavorites, aurora_i18n::tr!("toolbar-command-wearable-favorites")),
                     (Action::TextureLibrary, aurora_i18n::tr!("texture-library-title")),
                     (Action::IkEdit, aurora_i18n::tr!("ik-edit-title")),
                     (Action::Gestures, aurora_i18n::tr!("gesture-title")),
@@ -861,6 +864,7 @@ impl KeyBindings {
             // menu_viewer.xml: New Inventory Window, Outfits, Exit
             (Action::NewInventoryWindow, [kmod(K::KeyI, true, true), None]),
             (Action::Appearance, [kmod(K::KeyO, true, false), None]),
+            (Action::WearableFavorites, [kmod(K::KeyN, true, false), None]),
             (Action::Quit, [kmod(K::KeyQ, true, false), None]),
             (Action::TextureLibrary, [kmod(K::Space, true, false), None]),
             (Action::IkEdit, [kmod(K::KeyK, true, false), None]),
