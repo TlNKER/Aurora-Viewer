@@ -103,6 +103,7 @@ pub mod object_actions;
 pub mod omnifilter;
 pub mod options;
 pub mod owned_land;
+pub mod panorama;
 pub mod parcel_icons;
 pub mod pay;
 pub mod people;
@@ -113,6 +114,7 @@ pub mod place_card;
 pub mod place_details;
 pub mod places;
 pub mod portals;
+pub mod pose_stand;
 pub mod presence;
 pub mod profile;
 pub mod quick_prefs;
@@ -178,6 +180,9 @@ pub struct Panels {
     pub wearable_favorites: bool,
     /// The photo window (Firestorm's snapshot floater).
     pub snapshot: bool,
+    /// The photo window is in its 360° format (`SnapshotUi::pano`, which the
+    /// app copies here for the toolbar's button).
+    pub snapshot_pano: bool,
     pub people: bool,
     pub minimap: bool,
     /// World map (Ctrl+M).
@@ -241,6 +246,8 @@ pub struct Panels {
     pub director: bool,
     /// "Voice controls" (toolbar): who is in the voice channel and who speaks.
     pub voice_controls: bool,
+    /// The pose stand (toolbar `pose_stand`).
+    pub pose_stand: bool,
     /// The Omnifilter Rules Editor (Communicate menu, toolbar `omnifilter`).
     pub omnifilter: bool,
     /// The conversation log (toolbar `conversation_log`, Communicate ›
@@ -278,6 +285,7 @@ impl Panels {
             group_titles: false,
             wearable_favorites: false,
             snapshot: false,
+            snapshot_pano: false,
             people: settings.show_people,
             minimap: settings.show_minimap,
             world_map: false,
@@ -318,6 +326,7 @@ impl Panels {
             quick_prefs: false,
             director: false,
             voice_controls: false,
+            pose_stand: false,
             omnifilter: false,
             conversation_log: false,
             about: false,

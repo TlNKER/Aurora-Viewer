@@ -28,6 +28,7 @@ pub(crate) mod keycap;
 pub(crate) mod local_texture;
 mod modal_keys;
 pub(crate) mod pills;
+pub(crate) mod reorder;
 mod resize;
 mod restricted_text;
 #[cfg(test)]
@@ -148,7 +149,7 @@ pub(crate) fn two_lines_gap(ui: &egui::Ui, top: &egui::FontId, bottom: &egui::Fo
     ui.fonts_mut(|f| (f.row_height(top) + f.row_height(bottom)) / 2.0 + 1.0).max(base)
 }
 
-fn elided_galley(ui: &egui::Ui, text: impl Into<egui::WidgetText>, max_width: f32) -> std::sync::Arc<egui::Galley> {
+pub(crate) fn elided_galley(ui: &egui::Ui, text: impl Into<egui::WidgetText>, max_width: f32) -> std::sync::Arc<egui::Galley> {
     let text = text.into();
     if !super::bidi::has_rtl(text.text()) {
         return text.into_galley(ui, Some(egui::TextWrapMode::Truncate), max_width.max(0.0), egui::TextStyle::Body);
@@ -773,6 +774,19 @@ impl<'a> Floater<'a> {
             return None;
         }
         let min_id = egui::Id::unique((self.id, "minimized"));
+        // "Reset window positions and sizes" (`reset_windows`): back to its
+        // default place and size, expanded, at this frame
+        let reset = super::layout::take_reset(ctx, egui::Id::unique(self.id));
+        if reset {
+            ctx.data_mut(|d| {
+                d.remove::<bool>(min_id);
+                d.remove::<Vec2>(egui::Id::unique(self.id).with("expanded_size"));
+            });
+            if self.cascade.is_some() {
+                // it opens again as the first of its group
+                cascade::forget(ctx, egui::Id::unique(self.id));
+            }
+        }
         // Highland: a window that fills the work area is never minimized
         if self.highland_fill {
             ctx.data_mut(|d| d.insert_persisted(min_id, false));
@@ -828,7 +842,7 @@ impl<'a> Floater<'a> {
         let expanded_id = window_id.with("expanded_size");
         let restore_id = window_id.with("restore_size");
         let expanded = ctx.data_mut(|d| d.get_persisted::<Vec2>(expanded_id)).unwrap_or(self.default_size);
-        let restore = ctx.data_mut(|d| d.remove_temp::<bool>(restore_id)).unwrap_or(false);
+        let restore = ctx.data_mut(|d| d.remove_temp::<bool>(restore_id)).unwrap_or(false) || (reset && self.resizable);
         let resizable = self.resizable && !minimized;
         // The windows live between the bars (`layout::work_area`): none
         // opens larger than that room, nor outside it.
@@ -836,6 +850,10 @@ impl<'a> Floater<'a> {
         self.min_size = self.min_size.min(work.size());
         self.default_size = self.default_size.min(work.size());
         self.default_pos = fit_in(work, self.default_pos, self.default_size);
+        if reset && self.cascade.is_none() {
+            super::layout::reanchor(ctx, window_id);
+            ctx.data_mut(|d| d.insert_temp(window_id.with(PLACE_POS), self.default_pos));
+        }
         let opening = self
             .cascade
             .and_then(|group| cascade::prepare(ctx, window_id, group, egui::Rect::from_min_size(self.default_pos, expanded), work));
@@ -1026,11 +1044,12 @@ impl<'a> Floater<'a> {
                         // a window with a compact body when minimized says
                         // so with the Performance window's compact / full
                         // icons rather than a collapse (#1035)
-                        let (icon, tip) = match (self.compact_minimized.is_some(), minimized) {
-                            (true, true) => ("arrows-maximize", aurora_i18n::tr!("common-full-view")),
-                            (true, false) => ("arrows-minimize", aurora_i18n::tr!("common-compact-view")),
-                            (false, true) => ("minus", aurora_i18n::tr!("common-expand")),
-                            (false, false) => ("minus", aurora_i18n::tr!("common-collapse")),
+                        let icon = minimize_title_icon(self.compact_minimized.is_some(), minimized);
+                        let tip = match (self.compact_minimized.is_some(), minimized) {
+                            (true, true) => aurora_i18n::tr!("common-full-view"),
+                            (true, false) => aurora_i18n::tr!("common-compact-view"),
+                            (false, true) => aurora_i18n::tr!("common-expand"),
+                            (false, false) => aurora_i18n::tr!("common-collapse"),
                         };
                         if title_button(ui, p, icon).on_hover_text(tip).clicked() {
                             toggle_min = true;
@@ -1318,7 +1337,11 @@ pub(crate) fn bare_window(
         .resizable(false)
         .constrain(true);
     let slot = super::layout::slot(ctx, window_id);
-    if let Some(pos) = slot.pos {
+    if super::layout::take_reset(ctx, window_id) {
+        // "Reset window positions and sizes": back to its default rect
+        super::layout::reanchor(ctx, window_id);
+        w = w.current_pos(default.min).fixed_size(default.size());
+    } else if let Some(pos) = slot.pos {
         w = w.current_pos(pos);
     }
     if let Some(limits) = slot.limits {
@@ -1517,6 +1540,17 @@ pub fn place_floater(ctx: &egui::Context, id: &str, pos: egui::Pos2, size: Vec2)
         d.insert_temp(window_id.with("restore_size"), true);
         d.insert_temp(window_id.with(PLACE_POS), pos);
     });
+}
+
+/// "Reset window positions and sizes" (Preferences › Layout): every window
+/// back to its default place and size, expanded, without touching a
+/// setting (`layout::reset_windows`). The groups of preview windows forget
+/// the rect they open at, and the Performance window the one of its full
+/// view.
+pub fn reset_windows(ctx: &egui::Context) {
+    super::layout::reset_windows(ctx);
+    cascade::forget_saved(ctx);
+    super::perf::forget_monitor_rect(ctx);
 }
 
 /// Split what is left of `ui` between a list and the footer under it (its
@@ -1746,6 +1780,18 @@ pub(crate) const EXPAND: &str = "expand";
 
 /// Temporary frame of a floater asked to close (`close_floater`).
 const CLOSE: &str = "close";
+
+/// Title-bar minimize / expand icon (#3084). Ordinary floaters: minus while
+/// expanded, square while minimized. Compact bodies (Performance) keep the
+/// arrows-maximize / arrows-minimize pair.
+fn minimize_title_icon(compact: bool, minimized: bool) -> &'static str {
+    match (compact, minimized) {
+        (true, true) => "arrows-maximize",
+        (true, false) => "arrows-minimize",
+        (false, true) => "square",
+        (false, false) => "minus",
+    }
+}
 
 /// Title bar button with a Tabler icon (drawn by hand if it is missing).
 fn title_button(ui: &mut egui::Ui, p: &Palette, icon: &str) -> egui::Response {
@@ -2257,18 +2303,43 @@ pub fn segmented_size(ui: &egui::Ui, options: &[(&str, bool)]) -> Vec2 {
 /// the segment chosen before, as the poser's tracks do (`tracks::icon_track`;
 /// none under Reduce animations). Returns true when the selection changed.
 pub fn segmented(ui: &mut egui::Ui, p: &Palette, selected: &mut usize, options: &[(&str, bool)]) -> bool {
-    segmented_tall(ui, p, selected, options, SEGMENT_H)
+    segmented_track(ui, p, selected, options, &[], SEGMENT_H)
 }
 
 /// `segmented` with a track `height` tall, to line it up with the fields
 /// and buttons of a taller row.
 pub fn segmented_tall(ui: &mut egui::Ui, p: &Palette, selected: &mut usize, options: &[(&str, bool)], height: f32) -> bool {
+    segmented_track(ui, p, selected, options, &[], height)
+}
+
+/// `segmented` with some options out of reach: `disabled[i]` is the tooltip
+/// that says why option `i` cannot be chosen (None, or past the end of the
+/// slice: it can). A disabled option is drawn dimmed, takes no hover or click.
+pub fn segmented_with_disabled(
+    ui: &mut egui::Ui,
+    p: &Palette,
+    selected: &mut usize,
+    options: &[(&str, bool)],
+    disabled: &[Option<&str>],
+) -> bool {
+    segmented_track(ui, p, selected, options, disabled, SEGMENT_H)
+}
+
+fn segmented_track(
+    ui: &mut egui::Ui,
+    p: &Palette,
+    selected: &mut usize,
+    options: &[(&str, bool)],
+    disabled: &[Option<&str>],
+    height: f32,
+) -> bool {
     let galleys = segment_galleys(ui, options);
     let widths: Vec<f32> = galleys.iter().map(|g| g.size().x + SEGMENT_PAD_X).collect();
     let size = Vec2::new(segmented_size(ui, options).x, height);
     let (track, _) = ui.allocate_exact_size(size, Sense::hover());
     let radius = ui.visuals().widgets.inactive.corner_radius;
     ui.painter().rect_filled(track, radius, p.bar);
+    let off = |i: usize| disabled.get(i).copied().flatten();
     let mut rects = Vec::with_capacity(widths.len());
     let mut x = track.left() + SEGMENT_PAD;
     for w in &widths {
@@ -2279,8 +2350,9 @@ pub fn segmented_tall(ui: &mut egui::Ui, p: &Palette, selected: &mut usize, opti
         x += w;
     }
     // the lit face, its edges sliding from the segment chosen before (kept
-    // from the track's left, so that moving the window does not slide it)
-    if let Some(chosen) = rects.get(*selected) {
+    // from the track's left, so that moving the window does not slide it);
+    // none on a chosen option that is out of reach
+    if let Some(chosen) = rects.get(*selected).filter(|_| off(*selected).is_none()) {
         let id = ui.scope_id().with(("segmented-slide", options.len(), options.first().map(|o| o.0)));
         let time = ui.style().animation_time;
         let left = ui
@@ -2296,22 +2368,30 @@ pub fn segmented_tall(ui: &mut egui::Ui, p: &Palette, selected: &mut usize, opti
     let mut changed = false;
     for (i, ((label, accent), galley)) in options.iter().zip(galleys).enumerate() {
         let rect = rects[i];
-        let resp = ui.interact(rect, ui.scope_id().with(("segmented", i, *label)), Sense::click());
+        let off = off(i);
+        let resp = ui.interact(
+            rect,
+            ui.scope_id().with(("segmented", i, *label)),
+            if off.is_some() { Sense::hover() } else { Sense::click() },
+        );
         let sel = *selected == i;
         let text = match (sel, *accent) {
+            _ if off.is_some() => p.muted_dim,
             (true, true) => p.on_accent,
             (true, false) => p.ink,
             (false, _) if resp.hovered() => p.ink,
             (false, _) => p.muted,
         };
-        if !sel && resp.hovered() {
+        if !sel && off.is_none() && resp.hovered() {
             ui.painter()
                 .rect_filled(rect, inner_radius(ui.visuals()), p.raised.gamma_multiply(0.5));
         }
         let at = letters_in_middle(ui.painter(), &galley, rect);
         ui.painter().galley(at, galley, text);
-        resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::RadioButton, true, sel, *label));
-        if resp.clicked() && !sel {
+        resp.widget_info(|| egui::WidgetInfo::selected(egui::Role::RadioButton, off.is_none(), sel, *label));
+        if let Some(tip) = off {
+            resp.on_hover_text(tip);
+        } else if resp.clicked() && !sel {
             *selected = i;
             changed = true;
         }
@@ -3760,5 +3840,53 @@ mod maturity_tests {
             let (got, _, _) = maturity_style(&p, super::super::bars::maturity_name(r)).unwrap();
             assert_eq!(got, letter);
         }
+    }
+}
+
+#[cfg(test)]
+mod segmented_disabled_tests {
+    use super::*;
+    use crate::ui::widgets::elide_tests::Frames;
+
+    /// A disabled option takes no click, whatever else is clicked changes
+    /// the choice.
+    #[test]
+    fn a_disabled_segment_cannot_be_chosen() {
+        let p = crate::theme::Theme::default().palette();
+        let mut chosen = Vec::new();
+        for (disabled, clicks_work) in [(Some("why"), false), (None, true)] {
+            let mut frames = Frames::new();
+            let mut selected = 0usize;
+            let draw = |frames: &mut Frames, events: Vec<egui::Event>, selected: &mut usize| {
+                frames.run(events, |ui| {
+                    segmented_with_disabled(
+                        ui,
+                        &p,
+                        selected,
+                        &[("Aaaa", true), ("Bbbb", true), ("Cccc", true)],
+                        &[None, disabled],
+                    );
+                })
+            };
+            draw(&mut frames, Vec::new(), &mut selected);
+            // the second segment's middle: after the first, in the track
+            let texts = draw(&mut frames, Vec::new(), &mut selected);
+            let b = texts.iter().find(|t| t.source == "Bbbb").expect("the label is drawn").rect.center();
+            draw(&mut frames, vec![egui::Event::PointerMoved(b)], &mut selected);
+            for pressed in [true, false] {
+                draw(
+                    &mut frames,
+                    vec![egui::Event::PointerButton {
+                        pos: b,
+                        button: egui::PointerButton::Primary,
+                        pressed,
+                        modifiers: Default::default(),
+                    }],
+                    &mut selected,
+                );
+            }
+            chosen.push((selected, clicks_work));
+        }
+        assert_eq!(chosen, vec![(0, false), (1, true)]);
     }
 }
