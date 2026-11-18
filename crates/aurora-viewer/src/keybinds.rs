@@ -453,6 +453,8 @@ pub enum Action {
     /// Highland: immersive mode on or off (the key left of 1: ½ on a
     /// Danish keyboard, ` on a US one).
     HighlandImmersive,
+    /// Highland: the pose stand's window (Alt+P).
+    HighlandPoseStand,
     /// Me › Exit (File.Quit, Ctrl+Q).
     Quit,
     Gestures,
@@ -741,6 +743,7 @@ pub fn sections() -> &'static Vec<(&'static str, Vec<(Action, &'static str)>)> {
                     (Action::Preferences, aurora_i18n::tr!("common-preferences")),
                     (Action::ToggleInterface, aurora_i18n::tr!("keybinds-hide-interface")),
                     (Action::HighlandImmersive, aurora_i18n::tr!("ui-bars-immersive")),
+                    (Action::HighlandPoseStand, aurora_i18n::tr!("toolbar-command-pose-stand")),
                     (Action::HoverTips, aurora_i18n::tr!("ui-options-hover-tips")),
                     (Action::Import, aurora_i18n::tr!("keybinds-import-files")),
                     (Action::MuteAll, aurora_i18n::tr!("keybinds-mute-all-sound")),
@@ -977,7 +980,10 @@ impl KeyBindings {
             (Action::Appearance, [kmod(K::KeyO, true, false), None]),
             (Action::WearableFavorites, [kmod(K::KeyN, true, false), None]),
             // Highland: the key left of 1 (½ on a Danish keyboard)
-            (Action::HighlandImmersive, [k(K::Backquote), None]),
+            // and Ctrl+Enter
+            (Action::HighlandImmersive, [k(K::Backquote), kmod(K::Enter, true, false)]),
+            // Highland: Alt+P opens or closes the pose stand
+            (Action::HighlandPoseStand, [kalt(K::KeyP, false, false), None]),
             (Action::Quit, [kmod(K::KeyQ, true, false), None]),
             (Action::TextureLibrary, [kmod(K::Space, true, false), None]),
             (Action::IkEdit, [kmod(K::KeyK, true, false), None]),
@@ -1551,6 +1557,12 @@ impl KeyBindings {
                 }
                 self.map.push((a, b));
             }
+        }
+        // Highland: Ctrl+Enter came after ½, into an empty second slot
+        if let Some((_, b)) = self.map.iter_mut().find(|(a, _)| *a == Action::HighlandImmersive)
+            && b[1].is_none()
+        {
+            b[1] = kmod(KeyCode::Enter, true, false);
         }
         self
     }

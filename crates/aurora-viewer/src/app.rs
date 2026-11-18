@@ -5333,6 +5333,24 @@ impl App {
     }
 
     /// A key or a bindable mouse button changed state.
+    /// Highland: is this an immersive mode key (½ and Ctrl+Enter unless
+    /// changed in the keyboard shortcuts; ½ too when both were left empty)?
+    fn highland_immersive_key(&self, code: KeyCode, mods: crate::keybinds::Mods) -> bool {
+        if !self.in_world()
+            || crate::cli::highland_chat()
+            || self.options_ui.capture.is_some()
+            || self.exit_prompt.open
+        {
+            return false;
+        }
+        let action = crate::keybinds::Action::HighlandImmersive;
+        let binds = self.settings.keybinds.get(action);
+        if binds.iter().all(Option::is_none) {
+            return code == KeyCode::Backquote && !mods.ctrl && !mods.alt && !mods.shift;
+        }
+        self.settings.keybinds.triggered(&Input::key(code), mods) == Some(action)
+    }
+
     fn on_input(&mut self, input: Input, pressed: bool) {
         // the Director's playback (or a held playhead) ends on Escape,
         // whatever Escape is bound to
@@ -5506,6 +5524,12 @@ impl App {
             // Highland: Ctrl+N opens or closes Favorite Wearables
             // Highland: ½ turns immersive mode on or off
             Action::HighlandImmersive => self.toggle_immersive(),
+            // Highland: Alt+P opens or closes the pose stand
+            Action::HighlandPoseStand => ui::widgets::toggle_floater(
+                &self.egui_ctx,
+                ui::pose_stand::WINDOW,
+                &mut self.panels.pose_stand,
+            ),
             Action::WearableFavorites => ui::widgets::toggle_floater(
                 &self.egui_ctx,
                 ui::appearance::wearable_favorites::WINDOW,
@@ -24703,6 +24727,19 @@ impl ApplicationHandler for App {
                 .map_or(self.settings.window_fullscreen, |g| g.window.fullscreen().is_some());
             self.settings.window_fullscreen = !full;
             self.apply_fullscreen_setting();
+            return;
+        }
+        // Highland: ½ (the key left of 1) and Ctrl+Enter turn immersive
+        // mode on or off before anything else sees them, even with the
+        // keyboard in the chat box: ½ is never typed, and Ctrl+Enter no
+        // longer sends there (Enter does).
+        if let WindowEvent::KeyboardInput { event: ke, .. } = &event
+            && let PhysicalKey::Code(code) = ke.physical_key
+            && self.highland_immersive_key(code, key_mods)
+        {
+            if ke.state == ElementState::Pressed && !ke.repeat {
+                self.toggle_immersive();
+            }
             return;
         }
         let Some(g) = self.gfx.as_mut() else {
