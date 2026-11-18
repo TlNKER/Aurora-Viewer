@@ -35,8 +35,8 @@ mod avatar_render_settings;
 mod bridge;
 mod busy_pause;
 // Highland: Highland Chat, the chat-only mode
-mod highland_chat;
 mod gaming_mode;
+mod highland_chat;
 mod movelock;
 mod object_export;
 mod particle_editor;
@@ -352,6 +352,10 @@ impl RightGesture {
 
 /// Highland: greet with "Enjoy Highland!" only, not the grid message and "Welcome, name".
 const HIGHLAND_LOGIN_GREETING: bool = true;
+/// Highland: immersive mode shows the name tags, has only its Leave button
+/// (no name tag or HUD buttons; the HUDs stay as Show HUDs has them), and
+/// the viewer starts in it once in the world.
+const HIGHLAND_IMMERSIVE: bool = true;
 
 /// SL timings (llviewerinput.cpp): double-tap window / nudge phase, auto-fly.
 const NUDGE_TIME: f32 = 0.25;
@@ -5500,6 +5504,8 @@ impl App {
             // Highland: Alt+N, as World › About Land
             Action::AboutLand => self.panels.about_land = true,
             // Highland: Ctrl+N opens or closes Favorite Wearables
+            // Highland: ½ turns immersive mode on or off
+            Action::HighlandImmersive => self.toggle_immersive(),
             Action::WearableFavorites => ui::widgets::toggle_floater(
                 &self.egui_ctx,
                 ui::appearance::wearable_favorites::WINDOW,
@@ -12327,6 +12333,10 @@ impl App {
                 self.screen = Screen::World;
                 self.world.notifications.started = true;
                 self.camera.snap();
+                // Highland: the world opens in immersive mode
+                if HIGHLAND_IMMERSIVE && !self.interface.immersive && !self.highland_chat() {
+                    self.toggle_immersive();
+                }
                 // the loading screen fades out over the world
                 let mut o = TpOverlay::new(String::new(), true);
                 o.start = since;
@@ -16814,7 +16824,8 @@ impl App {
         if self.interface.immersive {
             self.interface.set_hidden(&self.egui_ctx, false);
         } else {
-            if !self.settings.immersive_huds && !self.world.rlva_has_locked_hud() {
+            // Highland: the HUDs stay as Show HUDs has them (no HUDs button)
+            if !HIGHLAND_IMMERSIVE && !self.settings.immersive_huds && !self.world.rlva_has_locked_hud() {
                 self.leave_huds();
             }
             self.interface.set_immersive(&self.egui_ctx);
@@ -18412,7 +18423,7 @@ impl App {
                         !self.camera.mouselook() && !(self.avatar_studio.active && self.avatar_studio.animation_editor),
                         ui::hud::avatar_tags(
                             self.interface.immersive,
-                            self.settings.immersive_name_tags,
+                            HIGHLAND_IMMERSIVE || self.settings.immersive_name_tags,
                             self.settings.show_name_tags,
                         ),
                         &self.settings,
@@ -18462,7 +18473,9 @@ impl App {
                     &self.name_tags,
                     &mut self.contact_markers,
                     self.settings.contact_marker_anchor,
-                    self.settings.contact_markers && !bare && (!self.interface.immersive || self.settings.immersive_name_tags),
+                    self.settings.contact_markers
+                        && !bare
+                        && (!self.interface.immersive || HIGHLAND_IMMERSIVE || self.settings.immersive_name_tags),
                 );
                 // RenderTrackerBeacon (LLTracker::render3D, renderBeacon)
                 if !self.camera.mouselook() && !bare && self.settings.tracker_beacon {
@@ -19428,9 +19441,14 @@ impl App {
                 if self.fly_override_caution && ui::fly_override::caution(&ctx, &p) {
                     self.fly_override_caution = false;
                 }
-                if self.interface.immersive && !self.camera.mouselook() {
-                    let huds = self.settings.show_huds.then_some(self.settings.immersive_huds);
-                    match ui::interface::immersive_buttons(&ctx, &p, self.settings.immersive_name_tags, huds) {
+                // Highland: no buttons in immersive mode, ½ leaves it
+                if !HIGHLAND_IMMERSIVE && self.interface.immersive && !self.camera.mouselook() {
+                    let huds = self
+                        .settings
+                        .show_huds
+                        .then_some(self.settings.immersive_huds)
+                        .filter(|_| !HIGHLAND_IMMERSIVE);
+                    match ui::interface::immersive_buttons(&ctx, &p, self.settings.immersive_name_tags, huds, !HIGHLAND_IMMERSIVE) {
                         Some(ui::interface::ImmersiveAction::Leave) => a.bar = BarAction::ToggleImmersive,
                         Some(ui::interface::ImmersiveAction::NameTags(on)) => {
                             self.settings.immersive_name_tags = on;

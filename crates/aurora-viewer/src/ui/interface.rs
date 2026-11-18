@@ -310,10 +310,17 @@ pub enum ImmersiveAction {
 /// right corner at their margin, faint until one is hovered: the name tags
 /// (`name_tags`: shown now), the HUDs (`huds`: shown now; None while Show
 /// HUDs hides them anyway, no button then), then the way out.
-pub fn immersive_buttons(ctx: &egui::Context, p: &Palette, name_tags: bool, huds: Option<bool>) -> Option<ImmersiveAction> {
+/// `tags_button`: Highland leaves the name tags' button out (they show).
+pub fn immersive_buttons(
+    ctx: &egui::Context,
+    p: &Palette,
+    name_tags: bool,
+    huds: Option<bool>,
+    tags_button: bool,
+) -> Option<ImmersiveAction> {
     let screen = ctx.content_rect();
     let size = Vec2::splat(HEIGHT);
-    let count = if huds.is_some() { 3.0 } else { 2.0 };
+    let count = 1.0 + f32::from(u8::from(huds.is_some())) + f32::from(u8::from(tags_button));
     let rect = Rect::from_min_max(
         Pos2::new(screen.right() - count * (MARGIN + HEIGHT), screen.top() + MARGIN),
         Pos2::new(screen.right() - MARGIN, screen.top() + MARGIN + HEIGHT),
@@ -328,16 +335,18 @@ pub fn immersive_buttons(ctx: &egui::Context, p: &Palette, name_tags: bool, huds
             ui.set_opacity(if hot { 1.0 } else { BUTTONS_REST });
             ui.spacing_mut().item_spacing = Vec2::new(MARGIN, 0.0);
             ui.horizontal(|ui| {
-                let (icon, label, tint) = if name_tags {
-                    ("label-filled", aurora_i18n::tr!("ui-bars-immersive-hide-tags"), p.violet_light)
-                } else {
-                    ("label-off", aurora_i18n::tr!("ui-bars-immersive-show-tags"), p.ink)
-                };
-                if super::widgets::glass_action_icon(ui, p, icon, label, size, tint)
-                    .on_hover_text(label)
-                    .clicked()
-                {
-                    action = Some(ImmersiveAction::NameTags(!name_tags));
+                if tags_button {
+                    let (icon, label, tint) = if name_tags {
+                        ("label-filled", aurora_i18n::tr!("ui-bars-immersive-hide-tags"), p.violet_light)
+                    } else {
+                        ("label-off", aurora_i18n::tr!("ui-bars-immersive-show-tags"), p.ink)
+                    };
+                    if super::widgets::glass_action_icon(ui, p, icon, label, size, tint)
+                        .on_hover_text(label)
+                        .clicked()
+                    {
+                        action = Some(ImmersiveAction::NameTags(!name_tags));
+                    }
                 }
                 if let Some(huds) = huds {
                     let (icon, label, tint) = if huds {

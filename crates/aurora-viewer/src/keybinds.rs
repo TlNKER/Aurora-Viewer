@@ -450,6 +450,9 @@ pub enum Action {
     Appearance,
     /// Highland: the Favorite Wearables window (Ctrl+N).
     WearableFavorites,
+    /// Highland: immersive mode on or off (the key left of 1: ½ on a
+    /// Danish keyboard, ` on a US one).
+    HighlandImmersive,
     /// Me › Exit (File.Quit, Ctrl+Q).
     Quit,
     Gestures,
@@ -737,6 +740,7 @@ pub fn sections() -> &'static Vec<(&'static str, Vec<(Action, &'static str)>)> {
                     (Action::Performance, aurora_i18n::tr!("common-performance")),
                     (Action::Preferences, aurora_i18n::tr!("common-preferences")),
                     (Action::ToggleInterface, aurora_i18n::tr!("keybinds-hide-interface")),
+                    (Action::HighlandImmersive, aurora_i18n::tr!("ui-bars-immersive")),
                     (Action::HoverTips, aurora_i18n::tr!("ui-options-hover-tips")),
                     (Action::Import, aurora_i18n::tr!("keybinds-import-files")),
                     (Action::MuteAll, aurora_i18n::tr!("keybinds-mute-all-sound")),
@@ -882,7 +886,8 @@ impl KeyBindings {
     fn for_layout(layout: &layout::KeyboardLayout) -> Self {
         let mut kb = Self::us_places(layout.movement_keys());
         for (action, binds) in &mut kb.map {
-            if walks(*action) {
+            // Highland: immersive mode keeps its place, the key left of 1
+            if walks(*action) || *action == Action::HighlandImmersive {
                 continue;
             }
             for b in binds.iter_mut().flatten() {
@@ -971,6 +976,8 @@ impl KeyBindings {
             (Action::NewInventoryWindow, [kmod(K::KeyI, true, true), None]),
             (Action::Appearance, [kmod(K::KeyO, true, false), None]),
             (Action::WearableFavorites, [kmod(K::KeyN, true, false), None]),
+            // Highland: the key left of 1 (½ on a Danish keyboard)
+            (Action::HighlandImmersive, [k(K::Backquote), None]),
             (Action::Quit, [kmod(K::KeyQ, true, false), None]),
             (Action::TextureLibrary, [kmod(K::Space, true, false), None]),
             (Action::IkEdit, [kmod(K::KeyK, true, false), None]),
