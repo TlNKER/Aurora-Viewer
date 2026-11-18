@@ -156,7 +156,7 @@ pub(super) fn show(
             let fill = if focused {
                 p.raised
             } else {
-                let mix = |a: u8, b: u8| ((u16::from(a) * 3 + u16::from(b)) / 4) as u8;
+                let mix = |a: u8, b: u8| ((u16::from(a) * 9 + u16::from(b)) / 10) as u8;
                 egui::Color32::from_rgb(
                     mix(p.panel.r(), p.raised.r()),
                     mix(p.panel.g(), p.raised.g()),

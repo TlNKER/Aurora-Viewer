@@ -72,10 +72,28 @@ pub(super) fn cycle(
         Some(true)
     } else if keys.hit(Action::ChatPreviousConversation, key, physical, modifiers) {
         Some(false)
+    } else if HIGHLAND_ALT_LEFT_RIGHT
+        && !cfg!(target_os = "macos")
+        && modifiers.alt
+        && !modifiers.shift
+        && !modifiers.ctrl
+        && !modifiers.command
+    {
+        // Highland: Alt+Left / Right also change the conversation, as they
+        // did before the chat keys could be changed (Alt+Up / Down still do;
+        // on a Mac Option+Left / Right move by word)
+        match key {
+            egui::Key::ArrowLeft => Some(false),
+            egui::Key::ArrowRight => Some(true),
+            _ => None,
+        }
     } else {
         None
     }
 }
+
+/// Highland: Alt+Left / Right change the conversation too.
+const HIGHLAND_ALT_LEFT_RIGHT: bool = true;
 
 /// The keys of this frame, before the window's field reads them. `order`:
 /// the conversations as the list shows them.
@@ -172,9 +190,11 @@ mod tests {
         assert_eq!(cycle(egui::Key::Tab, cmd), Some(true));
         assert_eq!(cycle(egui::Key::ArrowUp, alt), Some(false));
         assert_eq!(cycle(egui::Key::ArrowDown, alt), Some(true));
-        // Alt+Left / Right stay the field's (two keys per shortcut)
-        assert_eq!(cycle(egui::Key::ArrowLeft, alt), None);
-        assert_eq!(cycle(egui::Key::ArrowRight, alt), None);
+        // Highland: Alt+Left / Right change the conversation too (not on a Mac)
+        if !cfg!(target_os = "macos") {
+            assert_eq!(cycle(egui::Key::ArrowLeft, alt), Some(false));
+            assert_eq!(cycle(egui::Key::ArrowRight, alt), Some(true));
+        }
         assert_eq!(cycle(egui::Key::ArrowUp, alt | Modifiers::SHIFT), None);
         assert_eq!(cycle(egui::Key::ArrowUp, alt | ctrl), None);
         assert_eq!(cycle(egui::Key::Tab, ctrl | alt), None);
