@@ -5958,11 +5958,25 @@ impl App {
                     None if on_avatar => own_idx,
                     None => self.scene.interaction_at(&self.world, p, now, self.build.open),
                 };
-                let object = idx.and_then(|i| crate::camera::pick_focus_object(&self.world, i, now));
-                self.camera.alt_focus(p, object, ray, &mut self.world.agent, &self.settings.camera);
-                self.camera.begin_drag(false);
-                self.mouse_mode = MouseMode::FocusOrbit;
-                self.hold_focus_cursor();
+                // Highland: an object set to IGNORE (a moving light beam)
+                // does not take the camera: the surface behind it does, as in
+                // Firestorm; with only sky behind, nothing is focused
+                let ignored = !self.build.open
+                    && idx.and_then(|i| self.world.objects.get(i)).is_some_and(|o| o.click_action == crate::interaction::code::IGNORE);
+                let target = if ignored {
+                    self.scene
+                        .point_past_ignored(&self.world, ray, self.settings.draw_distance)
+                        .map(|p| (p, self.scene.interaction_at(&self.world, p, now, false)))
+                } else {
+                    Some((p, idx))
+                };
+                if let Some((p, idx)) = target {
+                    let object = idx.and_then(|i| crate::camera::pick_focus_object(&self.world, i, now));
+                    self.camera.alt_focus(p, object, ray, &mut self.world.agent, &self.settings.camera);
+                    self.camera.begin_drag(false);
+                    self.mouse_mode = MouseMode::FocusOrbit;
+                    self.hold_focus_cursor();
+                }
             }
         } else if let (Some(p), Some(ray)) = (avatar_hit, ray) {
             // ClickOnAvatarKeepsCamera (LLToolPie::handleLeftClickPick):

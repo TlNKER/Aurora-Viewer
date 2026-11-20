@@ -1506,6 +1506,13 @@ impl Scene {
         self.point_behind_ignored(world, ray, far, now, among)
     }
 
+    /// Highland: the nearest surface along `ray` that is not set to IGNORE,
+    /// for the camera's Alt+click (Firestorm's llspatialpartition.cpp leaves
+    /// IGNORE out of every pick outside the build tools).
+    pub fn point_past_ignored(&self, world: &World, ray: (Vec3, Vec3), far: f32) -> Option<Vec3> {
+        self.point_behind_ignored(world, ray, far, Instant::now(), None)
+    }
+
     /// First step of `interaction_point`: whether the triangles of an
     /// object set to IGNORE meet the ray before the depth point.
     pub(super) fn ignored_before(
