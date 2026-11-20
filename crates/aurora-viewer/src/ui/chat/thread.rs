@@ -142,7 +142,7 @@ pub(super) fn draw(
     let width = ui.available_width();
     let top = ui.cursor().top();
     let behind = ui.painter().add(egui::Shape::Noop);
-    let name = sender_name(env.world, env.names, env.own_name, line);
+    let name = sender_name(env.world, env.own_name, line);
     let who = Who::of(env, line);
     let rect = if th.compact {
         compact_row(ui, env, th, line, &name, &who, mark)
@@ -208,7 +208,9 @@ impl Who {
     fn of(env: &LineEnv, line: &ChatLine) -> Who {
         let logged = line.origin != Origin::Live;
         let object = matches!(line.kind, ChatKind::Object(_) | ChatKind::ObjectIm);
-        let avatar = if object {
+        // (nor the speaker `@shownames` hid when the line arrived: no
+        // picture, mark nor menu, FSChatHistoryHeader)
+        let avatar = if object || line.anonymous() {
             uuid::Uuid::nil()
         } else if line.kind.is_own() {
             env.world.agent_id
@@ -250,6 +252,8 @@ fn name_color(env: &LineEnv, th: &Thread, line: &ChatLine, who: &Who) -> Color32
 
 /// The text of a message and how it reads: an emote is the name in violet
 /// italics, a whisper in grey italics; the user's chat colours otherwise.
+/// The lines drawn pass `shown_name` ("(You)" with the option); a quote
+/// passes the real name, since it is pasted for others to read.
 fn body(env: &LineEnv, line: &ChatLine, name: &str) -> (String, Color32, bool) {
     let emote = line.text.starts_with("/me ") || line.text.starts_with("/me'");
     let text = if emote {
@@ -321,12 +325,12 @@ fn name_label(ui: &mut egui::Ui, env: &LineEnv, line: &ChatLine, name: &str, col
     if who.avatar.is_nil() {
         return;
     }
-    line_name_menu(&r, env.p, env.world, who.avatar, line, env.menu);
+    line_name_menu(&r, env.p, env.world, who.avatar, env.names, line, env.menu);
     if r.on_hover_cursor(egui::CursorIcon::PointingHand)
         .on_hover_text(aurora_i18n::tr!("common-view-profile"))
         .clicked()
     {
-        crate::ui::profile::request_open(ui.ctx(), who.avatar);
+        crate::ui::profile::request_open_in(ui.ctx(), env.names, who.avatar);
     }
 }
 
@@ -388,7 +392,7 @@ fn roomy_row(
                     }
                 });
             }
-            let (text, color, italics) = body(env, line, name);
+            let (text, color, italics) = body(env, line, super::shown_name(line, name));
             let emphasis = super::line_emphasis(env, line, italics);
             let visible = super::previews::text(env.previews.as_deref(), line, &text, ui.available_width());
             if !visible.is_empty() {
@@ -398,7 +402,7 @@ fn roomy_row(
                     p,
                     env.emoji,
                     env.world,
-                    env.names,
+                    line.wording(env.names),
                     env.want_names,
                     &visible,
                     size,
@@ -452,7 +456,7 @@ fn compact_row(
                 tags(ui, p, th, line, who);
             });
         }
-        let (text, color, italics) = body(env, line, name);
+        let (text, color, italics) = body(env, line, super::shown_name(line, name));
         let emphasis = super::line_emphasis(env, line, italics);
         let visible = super::previews::text(env.previews.as_deref(), line, &text, ui.available_width() - RIGHT);
         ui.vertical(|ui| {
@@ -465,7 +469,7 @@ fn compact_row(
                     p,
                     env.emoji,
                     env.world,
-                    env.names,
+                    line.wording(env.names),
                     env.want_names,
                     &visible,
                     size,
@@ -504,9 +508,9 @@ fn picture(ui: &mut egui::Ui, env: &mut LineEnv, line: &ChatLine, name: &str, wh
         ui.scope_id().with(("thread_pic", line.time, line.source)),
         egui::Sense::click(),
     );
-    line_name_menu(&r, p, env.world, who.avatar, line, env.menu);
+    line_name_menu(&r, p, env.world, who.avatar, env.names, line, env.menu);
     if r.on_hover_cursor(egui::CursorIcon::PointingHand).on_hover_text(name).clicked() {
-        crate::ui::profile::request_open(ui.ctx(), who.avatar);
+        crate::ui::profile::request_open_in(ui.ctx(), env.names, who.avatar);
     }
 }
 
@@ -581,7 +585,7 @@ fn notice(ui: &mut egui::Ui, env: &mut LineEnv, th: &Thread, line: &ChatLine, ma
                 p,
                 env.emoji,
                 env.world,
-                env.names,
+                line.wording(env.names),
                 env.want_names,
                 &super::system_text(&line.text),
                 chat_size(ui.ctx(), 12.0),
@@ -645,7 +649,7 @@ fn new_separator(ui: &mut egui::Ui, p: &Palette) {
 pub(super) fn message_menu(ui: &mut egui::Ui, env: &LineEnv, th: &mut Thread, target: &super::line_menu::Target) {
     let line = &target.line;
     let p = env.p;
-    let name = sender_name(env.world, env.names, env.own_name, line);
+    let name = sender_name(env.world, env.own_name, line);
     let who = Who::of(env, line);
     if crate::ui::menu::item(ui, p, "copy-filled", aurora_i18n::tr!("ui-chat-copy-message")) {
         // LLTextEditor::copy (indra/llui/lltexteditor.cpp): a transcript's
@@ -664,7 +668,7 @@ pub(super) fn message_menu(ui: &mut egui::Ui, env: &LineEnv, th: &mut Thread, ta
     }
     if !who.avatar.is_nil() {
         crate::ui::menu::separator(ui, p);
-        crate::ui::context::chat_sender_menu(ui, p, env.world, who.avatar, line);
+        crate::ui::context::chat_sender_menu(ui, p, env.world, who.avatar, env.names, line);
     }
 }
 
