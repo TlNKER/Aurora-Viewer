@@ -5522,6 +5522,12 @@ impl App {
             // Highland: Alt+N, as World › About Land
             Action::AboutLand => self.panels.about_land = true,
             // Highland: Ctrl+N opens or closes Favorite Wearables
+            // Highland: Alt+S turns shadows off, or on at Low
+            Action::HighlandShadows => {
+                self.settings.shadow_quality = if self.settings.shadow_quality == 0 { 1 } else { 0 };
+                self.settings.shadows = self.settings.shadow_quality > 0;
+                self.settings.save();
+            }
             // Highland: ½ turns immersive mode on or off
             Action::HighlandImmersive => self.toggle_immersive(),
             // Highland: Alt+P opens or closes the pose stand
@@ -12895,6 +12901,7 @@ impl App {
             tex_anim_at: hold.map(|h| h.at),
             sun_dir: env.sun_dir,
             sun_visible: env.sun_visible,
+            sky_rays: self.settings.directional_rays(env.sky.sun_dir.z >= 0.0, env.sky.moon_dir.z >= 0.0),
             sun_color: env.sun_color,
             sky_zenith: env.zenith,
             sky_horizon: env.horizon,

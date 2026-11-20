@@ -455,6 +455,8 @@ pub enum Action {
     HighlandImmersive,
     /// Highland: the pose stand's window (Alt+P).
     HighlandPoseStand,
+    /// Highland: shadows off, or on at Low (Alt+S).
+    HighlandShadows,
     /// Me › Exit (File.Quit, Ctrl+Q).
     Quit,
     Gestures,
@@ -744,6 +746,7 @@ pub fn sections() -> &'static Vec<(&'static str, Vec<(Action, &'static str)>)> {
                     (Action::ToggleInterface, aurora_i18n::tr!("keybinds-hide-interface")),
                     (Action::HighlandImmersive, aurora_i18n::tr!("ui-bars-immersive")),
                     (Action::HighlandPoseStand, aurora_i18n::tr!("toolbar-command-pose-stand")),
+                    (Action::HighlandShadows, aurora_i18n::tr!("highland-keybind-shadows")),
                     (Action::HoverTips, aurora_i18n::tr!("ui-options-hover-tips")),
                     (Action::Import, aurora_i18n::tr!("keybinds-import-files")),
                     (Action::MuteAll, aurora_i18n::tr!("keybinds-mute-all-sound")),
@@ -984,6 +987,8 @@ impl KeyBindings {
             (Action::HighlandImmersive, [k(K::Backquote), kmod(K::Enter, true, false)]),
             // Highland: Alt+P opens or closes the pose stand
             (Action::HighlandPoseStand, [kalt(K::KeyP, false, false), None]),
+            // Highland: Alt+S turns shadows off, or on at Low
+            (Action::HighlandShadows, [kalt(K::KeyS, false, false), None]),
             (Action::Quit, [kmod(K::KeyQ, true, false), None]),
             (Action::TextureLibrary, [kmod(K::Space, true, false), None]),
             (Action::IkEdit, [kmod(K::KeyK, true, false), None]),
