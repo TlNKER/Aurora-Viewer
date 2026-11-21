@@ -81,6 +81,11 @@ impl App {
         let effects = self.pose_stand.close(self.world.agent.is_sitting(), self.ao_enabled());
         log::info!("pose stand: closed");
         self.apply_pose_stand(effects);
+        // Highland: closing stops every animation, the AO's Always ones too,
+        // while the AO still counts them as playing: it starts over, as when
+        // its settings are applied again
+        self.ao_runtime.highland_restart();
+        self.ao_held_changes.clear();
     }
 
     /// UseAO for our account.

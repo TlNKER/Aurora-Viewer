@@ -215,9 +215,15 @@ fn parse_fps_limit(value: &str) -> Option<u32> {
 /// The window title, ending with the build profile ("(Dev)", "(Release)",
 /// "(Debug)"): test windows of different builds can be told apart.
 pub fn window_title() -> String {
-    // Highland: just the name, no version or build profile
+    // Highland: the name and the Aurora version it was built from ("Highland
+    // 0.9.13"), no build profile. aurora-build.ps1 reads that version from
+    // git at every build (the newest Aurora tag in the saved code)
     if HIGHLAND_PLAIN_TITLE {
-        return if highland_chat() { "Highland Chat" } else { "Highland" }.to_owned();
+        let name = if highland_chat() { "Highland Chat" } else { "Highland" };
+        return match option_env!("HIGHLAND_AURORA_VERSION").filter(|v| !v.is_empty()) {
+            Some(version) => format!("{name} {version}"),
+            None => name.to_owned(),
+        };
     }
     title_with(get().title.as_deref(), env!("AURORA_BUILD_PROFILE"), aurora_version::version())
 }

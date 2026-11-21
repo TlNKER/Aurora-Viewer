@@ -101,6 +101,18 @@ pub fn hold_changes(held: &mut Vec<(Uuid, bool)>, changes: Vec<(Uuid, bool)>) {
 }
 
 impl Runtime {
+    /// Highland: forget what was sent, as at login, keeping the choices and
+    /// the pause: the next update starts every animation again, Always
+    /// included (after the pose stand stopped them all).
+    pub fn highland_restart(&mut self) {
+        *self = Self {
+            choices: std::mem::take(&mut self.choices),
+            paused: self.paused,
+            stands: self.stands,
+            ..Self::default()
+        };
+    }
+
     pub fn with_choices(choices: HashMap<Uuid, Uuid>) -> Self {
         Self {
             choices,
