@@ -8,6 +8,8 @@ fn main() {
         .expect("bundled locales directory")
         .map(|entry| entry.expect("bundled locale entry").path())
         .filter(|path| path.extension().is_some_and(|extension| extension == "ftl"))
+        // Highland: English only
+        .filter(|path| path.file_stem().is_some_and(|name| name == "en"))
         .collect();
     paths.sort();
     let mut source = String::from("pub const SOURCES: &[(&str, &str)] = &[\n");

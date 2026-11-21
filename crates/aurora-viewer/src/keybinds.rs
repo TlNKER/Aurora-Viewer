@@ -546,6 +546,9 @@ pub enum Action {
     /// "Snapshot to Disk" (Firestorm Ctrl+`): a photo with the settings of
     /// the photo window, without it.
     PhotoToDisk,
+    /// The Phototools window (menu_viewer.xml `phototools_item_call`,
+    /// shortcut="alt|P").
+    Phototools,
     /// World › Environment's fixed times of day and Use Shared Environment
     /// (menu_viewer.xml: `World.EnvSettings` sunrise / noon / sunset /
     /// midnight / region, Ctrl+Shift+U / Y / N / X / J).
@@ -792,6 +795,7 @@ pub fn sections() -> &'static Vec<(&'static str, Vec<(Action, &'static str)>)> {
                 vec![
                     (Action::PhotoWindow, aurora_i18n::tr!("keybinds-photo-window")),
                     (Action::PhotoToDisk, aurora_i18n::tr!("keybinds-photo-to-disk")),
+                    (Action::Phototools, aurora_i18n::tr!("toolbar-command-phototools")),
                 ],
             ),
             (
@@ -929,7 +933,8 @@ impl KeyBindings {
             (Action::Fly, [k(K::Home), k(K::KeyF)]),
             (Action::FlyOverride, [kalt(K::KeyV, true, false), None]),
             (Action::AlwaysRun, [kmod(K::KeyR, true, false), None]),
-            (Action::MoveLock, [kalt(K::KeyP, true, false), None]),
+            // Highland: no shortcut (was Ctrl+Alt+P)
+            (Action::MoveLock, [None, None]),
             (Action::MovementEnhancer, [kalt(K::KeyM, true, false), None]),
             // Ctrl + the current jump key is derived at use, including rebindings.
             (Action::PassWall, [None, None]),
@@ -1042,7 +1047,8 @@ impl KeyBindings {
             // Selection Outlines
             (Action::MuteAll, [kalt(K::KeyM, true, true), None]),
             (Action::ContactMarkers, [None, None]),
-            (Action::DoubleClickTeleport, [kmod(K::KeyD, true, true), None]),
+            // Highland: no shortcut (was Ctrl+Shift+D)
+            (Action::DoubleClickTeleport, [None, None]),
             (Action::SelectionOutlines, [kalt(K::KeyH, true, false), None]),
             (
                 Action::Beacons,
@@ -1143,6 +1149,8 @@ impl KeyBindings {
             (Action::RefreshAttachments, [kalt(K::KeyR, false, true), None]),
             (Action::PhotoWindow, [kmod(K::KeyS, true, true), None]),
             (Action::PhotoToDisk, [kmod(K::Backquote, true, false), None]),
+            // Highland: no shortcut, Alt+P is the pose stand's
+            (Action::Phototools, [None, None]),
             // menu_viewer.xml: World › Environment
             (Action::EnvSunrise, [kmod(K::KeyU, true, true), None]),
             (Action::EnvMidday, [kmod(K::KeyY, true, true), None]),
@@ -1576,6 +1584,21 @@ impl KeyBindings {
             && b[1].is_none()
         {
             b[1] = kmod(KeyCode::Enter, true, false);
+        }
+        // Highland: Move lock, double-click teleport and Phototools lose the
+        // shortcuts they came with, kept in settings saved before
+        for (a, b) in self.map.iter_mut() {
+            let old = match a {
+                Action::MoveLock => kalt(KeyCode::KeyP, true, false),
+                Action::DoubleClickTeleport => kmod(KeyCode::KeyD, true, true),
+                Action::Phototools => kalt(KeyCode::KeyP, false, false),
+                _ => continue,
+            };
+            for slot in b.iter_mut() {
+                if *slot == old {
+                    *slot = None;
+                }
+            }
         }
         self
     }
@@ -2781,6 +2804,7 @@ mod tests {
             (Action::ResyncAnimations, (true, false, false), [K::KeyS; 4]),
             (Action::RefreshAttachments, (false, true, true), [K::KeyR; 4]),
             (Action::PhotoWindow, (true, true, false), [K::KeyS; 4]),
+            (Action::Phototools, (false, false, true), [K::KeyP; 4]),
             (Action::SitGround, (false, true, true), [K::KeyS; 4]),
             (Action::EnvSunrise, (true, true, false), [K::KeyU; 4]),
             (Action::EnvMidday, (true, true, false), [K::KeyY, K::KeyY, K::KeyY, K::KeyZ]),
@@ -2906,6 +2930,28 @@ mod tests {
         assert_eq!(
             kb.get(Action::ResyncAnimations),
             KeyBindings::default().get(Action::ResyncAnimations)
+        );
+    }
+
+    #[test]
+    fn alt_p_opens_phototools_and_leaves_move_lock_and_preferences_alone() {
+        let kb = KeyBindings::default();
+        let p = Input::key(letter(KeyCode::KeyP));
+        let alt = Mods {
+            alt: true,
+            ..Default::default()
+        };
+        assert_eq!(kb.triggered(&p, alt), Some(Action::Phototools));
+        assert_eq!(kb.triggered(&p, Mods { ctrl: true, ..alt }), Some(Action::MoveLock));
+        assert_eq!(
+            kb.triggered(
+                &p,
+                Mods {
+                    ctrl: true,
+                    ..Default::default()
+                }
+            ),
+            Some(Action::Preferences)
         );
     }
 
