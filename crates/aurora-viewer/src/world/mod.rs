@@ -2680,7 +2680,7 @@ impl World {
 
     /// Highland: a notice in the nearby chat that is never unread (the
     /// radar's comings and goings): no "1" on Nearby chat.
-    pub fn quiet_system_message(&mut self, text: impl Into<String>) {
+    pub fn quiet_system_message(&mut self, text: impl Into<String>, topic: notice_topics::Topic) {
         let line = ChatLine {
             time: SystemTime::now(),
             from: String::new(),
@@ -2692,7 +2692,7 @@ impl World {
             beyond_range: false,
             speaker: Default::default(),
         };
-        self.notice_topics.note(&line, notice_topics::Topic::Info);
+        self.notice_topics.note(&line, topic);
         self.nearby_push(line);
     }
 
@@ -5000,9 +5000,13 @@ impl World {
                 }
                 None
             }
-            NetEvent::InventoryUpdated { folders, items } => {
+            NetEvent::InventoryUpdated { folders, items, bulk } => {
                 self.reveal_added(&folders, &items);
-                self.inventory.server_updated(folders, items);
+                if bulk {
+                    self.inventory.bulk_updated(folders, items);
+                } else {
+                    self.inventory.server_updated(folders, items);
+                }
                 None
             }
             NetEvent::InventoryDelivery { transaction, folders } => {
@@ -6486,7 +6490,7 @@ impl World {
                     self.keyword_alert(id, &from, &n, true, attention::Open::NearbyChat);
                 }
                 // the name is a link to the resident (social::online_chat_line)
-                self.system_notice(social::online_chat_line(id, online), notice_topics::Topic::People);
+                self.system_notice(social::online_chat_line(id, online), notice_topics::Topic::Radar);
             }
         }
     }

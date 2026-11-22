@@ -807,7 +807,7 @@ pub fn show(
                 }
                 ui.add_space(2.0);
                 ui.label(RichText::new("Highland").size(34.0).strong().color(p.ink));
-                ui.label(RichText::new(client_tagline()).size(13.0).color(p.violet_pale));
+                // Highland: no "Second Life client · Rust · Vulkan" under the name
                 ui.add_space(18.0);
             });
             login_card = card(ui, p, 24, true, |ui| {
@@ -1492,7 +1492,7 @@ mod tests {
         let p = crate::theme::Theme::default().palette();
         let icons = Icons::default();
         let info = LoginInfo::preview_release("0.3.0");
-        for size in [Vec2::new(1000.0, 700.0), Vec2::new(1600.0, 900.0)] {
+        for size in [Vec2::new(1000.0, 700.0), Vec2::new(1280.0, 600.0), Vec2::new(1600.0, 900.0)] {
             let ctx = egui::Context::default();
             let mut settings = Settings::default();
             let mut form = LoginForm::default();

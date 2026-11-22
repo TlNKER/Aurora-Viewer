@@ -216,11 +216,7 @@ pub fn show(
                             );
                         }
                         ui.label(RichText::new("Highland").size(28.0 * layout.text_scale).strong().color(p.ink));
-                        ui.label(
-                            RichText::new(crate::ui::login::client_tagline())
-                                .size(13.0 * layout.text_scale)
-                                .color(p.violet_pale),
-                        );
+                        // Highland: no "Second Life client · Rust · Vulkan" under the name
                         ui.add_space(8.0);
                         if first_account {
                             ui.label(
@@ -1821,7 +1817,7 @@ mod tests {
     #[test]
     fn wide_login_restores_information_and_keeps_actions_near_growing_cards() {
         let mut spacing = Vec::new();
-        for size in [Vec2::new(1600.0, 900.0), Vec2::new(2560.0, 1440.0)] {
+        for size in [Vec2::new(1600.0, 900.0), Vec2::new(2560.0, 1440.0), Vec2::new(1440.0, 620.0)] {
             let ctx = Context::default();
             let theme = crate::theme::Theme::default();
             theme.apply(&ctx, 1.0);
@@ -1870,6 +1866,12 @@ mod tests {
             ] {
                 assert!(text_rect(&output, label).is_some(), "missing {label}");
             }
+            let area = |id| ctx.memory(|m| m.area_rect(egui::Id::unique(id))).expect("login area");
+            let version = area("login_version");
+            for id in ["login_settings", "login_accessibility"] {
+                assert!(area(id).bottom() < version.top(), "{size:?}: {id} overlaps version");
+            }
+            assert!(version.bottom() < area("login_news").top());
             let alpha = text_rect(&output, "synthetic-alpha").expect("first card");
             let beta = text_rect(&output, "synthetic-beta").expect("second card");
             spacing.push(beta.left() - alpha.left());

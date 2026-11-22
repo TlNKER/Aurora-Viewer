@@ -1242,6 +1242,7 @@ mod tests {
             show_transparency: false,
             hidden_types: Default::default(),
             render_type_keys: Default::default(),
+            ui_feature_keys: Default::default(),
             conversation_thumbnails: 0,
         }
     }
