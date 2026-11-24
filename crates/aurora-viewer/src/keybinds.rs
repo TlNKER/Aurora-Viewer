@@ -1348,8 +1348,7 @@ impl KeyBindings {
             (Action::Appearance, [kmod(K::KeyO, true, false), None]),
             (Action::WearableFavorites, [kmod(K::KeyN, true, false), None]),
             // Highland: the key left of 1 (½ on a Danish keyboard)
-            // and Ctrl+Enter
-            (Action::HighlandImmersive, [k(K::Backquote), kmod(K::Enter, true, false)]),
+            (Action::HighlandImmersive, [k(K::Backquote), None]),
             // Highland: Alt+P opens or closes the pose stand
             (Action::HighlandPoseStand, [kalt(K::KeyP, false, false), None]),
             // Highland: Alt+S turns ray tracing on or off
@@ -1407,7 +1406,8 @@ impl KeyBindings {
                 ],
             ),
             // menu_viewer.xml: Show Tips, shortcut="control|shift|T"
-            (Action::HoverTips, [kmod(K::KeyT, true, true), None]),
+            // Highland: no shortcut (was Ctrl+Shift+T)
+            (Action::HoverTips, [None, None]),
             (Action::Import, [kmod(K::KeyU, true, false), None]),
             // menu_viewer.xml: Mute/unmute sound, DoubleClick Teleport, Show
             // Selection Outlines
@@ -1527,7 +1527,8 @@ impl KeyBindings {
             // 2026-11-15. Send (Enter), Close (Ctrl+W) and Find (Ctrl+F)
             // stay fixed.
             (Action::ChatNewLine, [kmod(K::Enter, false, true), kmod(K::Enter, true, true)]),
-            (Action::ChatShout, [None, None]),
+            // Highland: Ctrl+Enter shouts
+            (Action::ChatShout, [kmod(K::Enter, true, false), None]),
             (Action::ChatWhisper, [None, None]),
             (Action::ChatOoc, [kalt(K::Enter, false, false), None]),
             (Action::ChatHistoryPrevious, [kmod(K::ArrowUp, true, false), None]),
@@ -1955,16 +1956,13 @@ impl KeyBindings {
                 self.map.push((a, b));
             }
         }
-        // Highland: Ctrl+Enter came after ½, into an empty second slot
-        if let Some((_, b)) = self.map.iter_mut().find(|(a, _)| *a == Action::HighlandImmersive)
-            && b[1].is_none()
-        {
-            b[1] = kmod(KeyCode::Enter, true, false);
-        }
-        // Highland: Move lock, double-click teleport and Phototools lose the
-        // shortcuts they came with, kept in settings saved before
+        // Highland: Move lock, double-click teleport, Phototools and the
+        // world's tooltips lose the shortcuts they came with, and immersive
+        // mode its Ctrl+Enter, kept in settings saved before
         for (a, b) in self.map.iter_mut() {
             let old = match a {
+                Action::HighlandImmersive => kmod(KeyCode::Enter, true, false),
+                Action::HoverTips => kmod(KeyCode::KeyT, true, true),
                 Action::MoveLock => kalt(KeyCode::KeyP, true, false),
                 Action::DoubleClickTeleport => kmod(KeyCode::KeyD, true, true),
                 Action::Phototools => kalt(KeyCode::KeyP, false, false),
@@ -1975,6 +1973,12 @@ impl KeyBindings {
                     *slot = None;
                 }
             }
+        }
+        // Highland: Ctrl+Enter shouts, into a Shout left without a key
+        if let Some((_, b)) = self.map.iter_mut().find(|(a, _)| *a == Action::ChatShout)
+            && b.iter().all(Option::is_none)
+        {
+            b[0] = kmod(KeyCode::Enter, true, false);
         }
         self
     }

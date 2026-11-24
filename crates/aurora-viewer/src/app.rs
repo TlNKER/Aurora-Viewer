@@ -5567,8 +5567,8 @@ impl App {
     }
 
     /// A key or a bindable mouse button changed state.
-    /// Highland: is this an immersive mode key (½ and Ctrl+Enter unless
-    /// changed in the keyboard shortcuts; ½ too when both were left empty)?
+    /// Highland: is this an immersive mode key (½ unless changed in the
+    /// keyboard shortcuts; ½ too when both were left empty)?
     fn highland_immersive_key(&self, code: KeyCode, mods: crate::keybinds::Mods) -> bool {
         if !self.in_world()
             || crate::cli::highland_chat()
@@ -5773,18 +5773,18 @@ impl App {
             // Highland: Ctrl+N opens or closes Favorite Wearables
             // Highland: Alt+S turns shadows off, or on at Low
             // Highland: Alt+S turns the sun's ray-traced shadows on with the
-            // shadows at Low, or both off (Shadow quality: Disabled). The
-            // volumetric sun and moon rays stay off either way; the other ray
-            // tracing options are kept. A card without ray tracing, or VR,
-            // gets the shadows alone.
+            // shadows at Low and the volumetric sun and moon rays, or all
+            // off (Shadow quality: Disabled); the other ray tracing options
+            // are kept. A card without ray tracing, or VR, gets the shadows
+            // and the rays alone.
             Action::HighlandShadows => {
                 use aurora_render::RayTracingSupport as Support;
                 let can = matches!(self.options_ui.ray_tracing, Support::Ready | Support::NotOpened);
-                let on = !(self.settings.ray_tracing.enabled || self.settings.shadow_quality > 0);
+                let on = !(self.settings.ray_tracing.enabled || self.settings.shadow_quality > 0 || self.settings.sky_rays_enabled);
                 self.settings.shadow_quality = u8::from(on).into();
                 self.settings.shadows = on;
                 self.settings.ray_tracing.enabled = on && can;
-                self.settings.sky_rays_enabled = false;
+                self.settings.sky_rays_enabled = on;
                 self.settings.save();
                 self.snapshots.settings_changed = true;
             }
@@ -25625,10 +25625,9 @@ impl ApplicationHandler for App {
             self.apply_fullscreen_setting();
             return;
         }
-        // Highland: ½ (the key left of 1) and Ctrl+Enter turn immersive
-        // mode on or off before anything else sees them, even with the
-        // keyboard in the chat box: ½ is never typed, and Ctrl+Enter no
-        // longer sends there (Enter does).
+        // Highland: ½ (the key left of 1) turns immersive mode on or off
+        // before anything else sees it, even with the keyboard in the chat
+        // box, and is never typed.
         if let WindowEvent::KeyboardInput { event: ke, .. } = &event
             && let PhysicalKey::Code(code) = ke.physical_key
             && self.highland_immersive_key(code, key_mods)
