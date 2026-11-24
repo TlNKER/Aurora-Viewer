@@ -94,6 +94,10 @@ impl ChatCommandSettings {
     }
 }
 
+/// AvatarHoverOffsetStepSize (settings_per_account.xml): the step of
+/// `/zoffset_up` and `/zoffset_down`, in metres.
+pub const HOVER_STEP: f32 = 0.05;
+
 /// A number typed as `12` (absolute) or `+12` / `-12` (relative to the
 /// current value): parseAbsoluteOrRelativeF32.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -109,6 +113,10 @@ impl Amount {
             value,
             relative: token.starts_with(['+', '-']),
         })
+    }
+
+    fn step(value: f32) -> Amount {
+        Amount { value, relative: true }
     }
 
     pub fn apply(self, base: f32) -> f32 {
@@ -201,13 +209,9 @@ pub enum Command {
     /// `bw kbps`: the maximum bandwidth, within the range of the
     /// Preferences (Firestorm's command stops at 3,000).
     Bandwidth(u32),
-    /// A command Aurora can't do yet: said in the chat
-    /// instead of sending the line.
-    #[allow(dead_code)] // Highland: /zoffset was its only user
-    Unavailable(&'static str),
-    /// Highland: `/zoffset_up [m]`, `/zoffset_down [m]`, `/zoffset_reset`,
-    /// `/zoffset [m]`: the avatar's Z-offset, which is its hover height.
-    ZOffset(ZOffset),
+    /// `/zoffset_up`, `/zoffset_down`, `/zoffset_reset`, `/zoffset [+-]z`:
+    /// our avatar's hover height (AvatarHoverOffsetZ).
+    HoverHeight(Amount),
     /// `key2name uuid`: tell the avatar name once known.
     KeyToName(Uuid),
     /// `/touch uuid`, `/siton uuid`, `/standup`.
@@ -241,19 +245,10 @@ pub enum Command {
     PasteCamera(CameraSpec),
 }
 
-/// Highland: what a `/zoffset…` command does to the hover height.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ZOffset {
-    /// Up (positive) or down by this many metres.
-    By(f32),
-    /// To this height (`/zoffset 0.25`, `/zoffset_reset`).
-    Set(f32),
-    /// `/zoffset` alone: say the current height.
-    Show,
+fn hover_usage() -> &'static str {
+    aurora_i18n::tr!("cmdline-mod-zoffset-usage")
 }
 
-/// Highland: the step of `/zoffset_up` and `/zoffset_down` without a number.
-pub const ZOFFSET_STEP: f32 = 0.05;
 fn camera_parse_error() -> &'static str {
     aurora_i18n::tr!("cmdline-mod-invalid-camera-position-expected-x-y-z-or-x")
 }
@@ -320,11 +315,22 @@ pub fn parse(text: &str, s: &ChatCommandSettings, mut roll: impl FnMut(u32) -> u
         "/touch" => return Some(i.uuid().map_or(Command::Report(Vec::new()), Command::Touch)),
         "/siton" => return Some(i.uuid().map_or(Command::Report(Vec::new()), Command::SitOn)),
         "/standup" => return Some(Command::StandUp),
-        // Highland: the Z-offset is the hover height
-        "/zoffset_up" => return Some(Command::ZOffset(ZOffset::By(i.float().unwrap_or(ZOFFSET_STEP).abs()))),
-        "/zoffset_down" => return Some(Command::ZOffset(ZOffset::By(-i.float().unwrap_or(ZOFFSET_STEP).abs()))),
-        "/zoffset_reset" => return Some(Command::ZOffset(ZOffset::Set(0.0))),
-        "/zoffset" => return Some(Command::ZOffset(i.float().map_or(ZOffset::Show, ZOffset::Set))),
+        // AvatarHoverOffsetStepSize up or down, 0, or a value or +delta;
+        // a value that is not a number does nothing, like the Legacy Viewer.
+        "/zoffset_up" => return Some(Command::HoverHeight(Amount::step(HOVER_STEP))),
+        "/zoffset_down" => return Some(Command::HoverHeight(Amount::step(-HOVER_STEP))),
+        "/zoffset_reset" => {
+            return Some(Command::HoverHeight(Amount {
+                value: 0.0,
+                relative: false,
+            }));
+        }
+        "/zoffset" => {
+            return Some(match i.word() {
+                Some(token) => Amount::parse(token).map_or(Command::Report(Vec::new()), Command::HoverHeight),
+                None => Command::Report(vec![hover_usage().into()]),
+            });
+        }
         _ => {}
     }
     if is(&s.offer_tp) {
@@ -566,6 +572,25 @@ mod tests {
         assert_eq!(cmd("key2name nope"), Some(Command::Report(Vec::new())));
         assert_eq!(cmd(&format!("offertp {id}")), Some(Command::OfferTeleport(id)));
         assert_eq!(cmd(&format!("/siton {id}")), Some(Command::SitOn(id)));
+    }
+
+    #[test]
+    fn hover_height_commands() {
+        let amount = |value, relative| Some(Command::HoverHeight(Amount { value, relative }));
+        assert_eq!(cmd("/zoffset_up"), amount(HOVER_STEP, true));
+        assert_eq!(cmd("/zoffset_down"), amount(-HOVER_STEP, true));
+        assert_eq!(cmd("/zoffset_reset"), amount(0.0, false));
+        assert_eq!(cmd("/zoffset 0.25"), amount(0.25, false));
+        assert_eq!(cmd("/zoffset +0.1"), amount(0.1, true));
+        assert_eq!(cmd("/zoffset -0.1"), amount(-0.1, true));
+        assert_eq!(cmd("/zoffset high"), Some(Command::Report(Vec::new())));
+        assert_eq!(cmd("/zoffset"), Some(Command::Report(vec![hover_usage().into()])));
+        // inside FSCmdLine, like every command of cmd_line_chat
+        let off = ChatCommandSettings {
+            enabled: false,
+            ..Default::default()
+        };
+        assert_eq!(parse("/zoffset_up", &off, |_| 0), None);
     }
 
     #[test]
