@@ -610,6 +610,7 @@ impl PlacesUi {
         let field = widgets::clearable_search_box(&mut tb, p, &mut self.filter, aurora_i18n::tr!("ui-places-search"), w);
         if std::mem::take(&mut self.highland_focus_search) {
             field.request_focus();
+            crate::ui::widgets::highland_select_all(&field.ctx, field.id, &self.filter);
         }
         self.sort_button(&mut tb, p, c.world, env.sort, actions);
 
@@ -1590,6 +1591,7 @@ impl PlacesUi {
             .inner;
         if std::mem::take(&mut self.highland_focus_search) {
             field.request_focus();
+            crate::ui::widgets::highland_select_all(&field.ctx, field.id, &self.filter);
         }
         ui.add_space(8.0);
         // the three tabs

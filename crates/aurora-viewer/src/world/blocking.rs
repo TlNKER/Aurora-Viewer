@@ -182,6 +182,7 @@ impl World {
             // already greyed as blocked: not dimmed a second time
             beyond_range: false,
             speaker: Default::default(),
+            private_history: false,
         });
     }
 

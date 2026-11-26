@@ -97,6 +97,9 @@ pub struct AppearanceUi {
     /// by its readback; later arrivals still need registration.
     pub worn_before: HashSet<Uuid>,
     pub favorite_pending: HashSet<Uuid>,
+    /// Highland: items whose links leave every outfit ("Remove from all
+    /// outfits"), taken by the app.
+    pub highland_unlink: Vec<Uuid>,
     profile_item: Option<Uuid>,
     pub message: String,
     requested_items: HashSet<Uuid>,
@@ -911,6 +914,7 @@ fn item_menu(
         if !st.editing && menu::item(ui, p, "pencil-filled", aurora_i18n::tr!("ui-context-edit-outfit")) {
             st.editing = true;
         }
+        items::highland_remove_from_all(ui, p, st, &items);
     });
 }
 
@@ -4992,7 +4996,6 @@ mod tests {
             model::seed_demo(&mut world.inventory, Uuid::from_u128(1));
             let id = Uuid::from_u128(target);
             let name = world.inventory.items[&id].name.clone();
-            let before = world.inventory.generation;
             let mut st = AppearanceUi::default();
             st.open(2, false);
             for _ in 0..5 {
@@ -5006,6 +5009,9 @@ mod tests {
                 egui::Modifiers::NONE,
                 egui::PointerButton::Secondary,
             );
+            // Read after the draws: opening the window asks for its folders,
+            // and each folder read changes the generation.
+            let before = world.inventory.generation;
             let actions = click_menu(&ctx, &mut world, &mut st, aurora_i18n::tr!("ui-appearance-items-show-original"));
             assert!(
                 matches!(actions.as_slice(), [Action::ShowOriginal(actual)] if *actual == id),

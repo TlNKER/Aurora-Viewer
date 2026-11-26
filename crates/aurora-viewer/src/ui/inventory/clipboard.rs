@@ -152,15 +152,39 @@ fn request_focus_ctx(ctx: &egui::Context, st: &mut InventoryUi) {
     st.list_focus_frame = Some(ctx.cumulative_frame_nr_for(egui::ViewportId::ROOT));
     ctx.memory_mut(|m| {
         m.request_focus(focus_id(st));
-        m.set_focus_lock_filter(
-            focus_id(st),
-            egui::EventFilter {
-                vertical_arrows: true,
-                horizontal_arrows: true,
-                ..Default::default()
-            },
-        );
+        m.set_focus_lock_filter(focus_id(st), list_filter(st));
     });
+}
+
+/// The keys the focused list keeps from egui's focus moves: the arrows, and
+/// Tab in the split view (`split_tab`).
+fn list_filter(st: &InventoryUi) -> egui::EventFilter {
+    egui::EventFilter {
+        vertical_arrows: true,
+        horizontal_arrows: true,
+        tab: st.other_pane.is_some(),
+        ..Default::default()
+    }
+}
+
+/// The split view: Tab (or Shift+Tab) in one pane's list gives the keyboard
+/// to the other's, as in Dolphin's split view and the two-panel file
+/// managers, rather than to the next widget.
+pub(super) fn split_tab(ctx: &egui::Context, a: &mut InventoryUi, b: &mut InventoryUi) {
+    let (fa, fb) = (focus_id(a), focus_id(b));
+    ctx.memory_mut(|m| {
+        m.set_focus_lock_filter(fa, list_filter(a));
+        m.set_focus_lock_filter(fb, list_filter(b));
+    });
+    let (in_a, in_b) = ctx.memory(|m| (m.has_focus(fa), m.has_focus(fb)));
+    if !(in_a || in_b) || a.rename.is_some() || b.rename.is_some() {
+        return;
+    }
+    let pressed =
+        ctx.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Tab) | i.consume_key(egui::Modifiers::SHIFT, egui::Key::Tab));
+    if pressed {
+        request_focus_ctx(ctx, if in_a { b } else { a });
+    }
 }
 
 fn list_focused_id() -> egui::Id {
@@ -185,6 +209,27 @@ pub(super) fn list_has_focus(ui: &egui::Ui, st: &InventoryUi) -> bool {
         && !egui::Popup::is_any_open(ui.ctx())
 }
 
+/// A click on a list's empty space selects nothing, as in a file manager, in
+/// every layout and both styles; Ctrl or Shift keep the selection. New
+/// Folder with nothing selected then creates in the inventory's root
+/// (#4740). The Legacy Viewer keeps its selection there
+/// (`LLFolderView::handleMouseDown`), but its "+" New Folder never uses the
+/// selection (`LLPanelMainInventory::doCreate`), where Aurora's does: a
+/// visible difference. A real click only: egui also "clicks" a focused
+/// widget on Enter or Space, which would drop the selection Alt+Enter is
+/// about to open.
+pub(super) fn blank_click(ui: &egui::Ui, st: &mut InventoryUi, response: &egui::Response) {
+    if response.clicked()
+        && ui.input(|i| i.pointer.any_click())
+        && !ui.input(|i| i.modifiers.command || i.modifiers.ctrl || i.modifiers.shift)
+    {
+        st.selection.clear();
+        st.selected = None;
+        st.focus = None;
+        st.anchor = None;
+    }
+}
+
 /// A stable focus target survives scrolling selected rows out of the viewport.
 /// Register the background before the rows so their clicks take precedence.
 pub(super) fn list_focus(ui: &mut egui::Ui, st: &mut InventoryUi, height: f32) {
@@ -195,32 +240,21 @@ pub(super) fn list_focus(ui: &mut egui::Ui, st: &mut InventoryUi, height: f32) {
         let explorer = st.aurora.is_some_and(|frame| frame.explorer);
         ui.ctx().data_mut(|d| d.insert_temp(list_focused_id(), (now, explorer)));
     }
-    // a click in the explorer's empty space selects nothing, as in a file
-    // manager (Ctrl or Shift keep the selection)
-    // its right-click: the menu of the folder shown (Windows Explorer's
+    // the explorer's right-click on its empty space: the menu of the folder shown (Windows Explorer's
     // and Dolphin's menu of the empty space)
+    // Recent, Worn and Favorites too, with New into each type's folder
+    // (`context_catalog::build_background`)
     if response.secondary_clicked()
         && ui.input(|i| i.pointer.any_click())
         && st
             .aurora
-            .is_some_and(|frame| frame.explorer && frame.layout != super::aurora::Layout::Compact)
-        && st.tab == 0
+            .is_some_and(|frame| frame.layout != super::aurora::Layout::Compact && (frame.explorer || st.tab != 0))
         && let Some(pos) = response.interact_pointer_pos()
     {
         st.row_menu = Some((st.browse, pos));
         st.background_menu = true;
     }
-    // a real click only: egui also "clicks" a focused widget on Enter or
-    // Space, which would drop the selection Alt+Enter is about to open
-    if response.clicked()
-        && ui.input(|i| i.pointer.any_click())
-        && st.aurora.is_some_and(|frame| frame.explorer)
-        && !ui.input(|i| i.modifiers.command || i.modifiers.ctrl || i.modifiers.shift)
-    {
-        st.selection.clear();
-        st.selected = None;
-        st.focus = None;
-    }
+    blank_click(ui, st, &response);
     let leaving = ui.input(|i| {
         i.pointer.any_pressed() && i.pointer.interact_pos().is_none_or(|pos| !rect.contains(pos))
             || i.key_pressed(egui::Key::Tab)
@@ -265,8 +299,37 @@ pub(super) fn list_focus(ui: &mut egui::Ui, st: &mut InventoryUi, height: f32) {
             .list_focus_frame
             .is_some_and(|frame| ui.ctx().cumulative_frame_nr_for(egui::ViewportId::ROOT) <= frame + 1)
         && ui.memory(|m| m.focused().is_none() && m.allows_interaction(ui.layer_id()));
-    if response.clicked() || response.has_focus() || restore {
+    // The list already holds the keyboard: keep its focus-lock filter and the
+    // restore deadline up to date without requesting focus again. A request on
+    // every frame makes egui interrupt the input method each time, so a name
+    // could never be composed (#3889, `controls::ShotNaming`).
+    let focused = response.has_focus();
+    if focused {
+        st.list_focus_frame = Some(now);
+        ui.memory_mut(|m| m.set_focus_lock_filter(focus_id(st), list_filter(st)));
+    }
+    if (response.clicked() && !focused) || restore {
         request_focus(ui, st);
+    }
+    if response.has_focus()
+        && ui.is_enabled()
+        && st.dialog.is_none()
+        && !ui.ctx().text_edit_focused()
+        && !egui::Popup::is_any_open(ui.ctx())
+    {
+        // Offer native composition at the list, as the residents' list does
+        // (ui/people/type_ahead.rs): the type-ahead accepts IME commits, so a
+        // name outside ASCII can be composed and typed.
+        let to_global = ui.ctx().layer_transform_to_global(ui.layer_id()).unwrap_or_default();
+        let cursor = egui::Rect::from_min_size(rect.min, egui::vec2(1.0, ui.spacing().interact_size.y));
+        ui.output_mut(|out| {
+            out.ime = Some(egui::output::IMEOutput {
+                purpose: egui::IMEPurpose::Normal,
+                rect: to_global * rect,
+                cursor_rect: to_global * cursor,
+                should_interrupt_composition: false,
+            });
+        });
     }
 }
 
@@ -562,6 +625,9 @@ fn demo_mode() -> Option<&'static str> {
                 || mode.starts_with("search-selection")
                 || mode.starts_with("keyboard")
                 || mode.starts_with("aurora-keyboard")
+                || mode.starts_with("type-ahead-ime")
+                || mode.starts_with("aurora-type-ahead-ime")
+                || matches!(mode.as_str(), "ime" | "aurora-ime")
                 || mode.starts_with("enter")
                 || mode.contains("rename-focus")
                 || mode.contains("rename-window")
@@ -703,6 +769,64 @@ pub fn demo_events(ctx: &egui::Context, frame: u64, st: &mut InventoryUi) -> Vec
                 target.rename.is_some(),
                 ctx.memory(|m| m.has_focus(focus_id(target))),
                 target.selected
+            );
+        }
+        return Vec::new();
+    }
+    if mode == "type-ahead-ime" {
+        // Click Materials in the root, then commit "tex" as a Japanese IME
+        // does: Textures is the next match below it.
+        if matches!(frame, 650 | 651)
+            && let Some(pos) =
+                ctx.data(|d| d.get_temp::<egui::Pos2>(egui::Id::unique(("clipboard_demo_row", st.ui_id, crate::demo::u(19)))))
+        {
+            return vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: frame == 650,
+                    modifiers: Default::default(),
+                },
+            ];
+        }
+        if frame == 665 {
+            return vec![egui::Event::Ime(egui::ImeEvent::Commit("tex".into()))];
+        }
+        if frame == 700 {
+            log::info!(
+                "demo inventory type-ahead IME: frame={frame}, selected={:?}, prefix={:?}, list_focus={}",
+                st.selected,
+                st.type_ahead.text(),
+                ctx.memory(|m| m.has_focus(focus_id(st)))
+            );
+        }
+        return Vec::new();
+    }
+    if mode == "ime" {
+        // scripts/test-ime-linux.py: click Animations so the list holds the
+        // keyboard, then leave the keys to the system's input method and log
+        // where they went once a second. No synthetic IME event.
+        if matches!(frame, 650 | 651)
+            && let Some(pos) =
+                ctx.data(|d| d.get_temp::<egui::Pos2>(egui::Id::unique(("clipboard_demo_row", st.ui_id, crate::demo::u(10)))))
+        {
+            return vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: frame == 650,
+                    modifiers: Default::default(),
+                },
+            ];
+        }
+        if frame >= 700 && frame.is_multiple_of(60) {
+            log::info!(
+                "demo inventory ime: frame={frame}, selected={:?}, prefix={:?}, list_focus={}",
+                st.selected.map(|id| id.as_u128()),
+                st.type_ahead.text(),
+                ctx.memory(|m| m.has_focus(focus_id(st)))
             );
         }
         return Vec::new();
@@ -1294,6 +1418,47 @@ mod tests {
         }
     }
 
+    /// #4740: a click on the list's empty space selects nothing in every
+    /// layout, so New Folder creates in the root; Ctrl keeps the selection.
+    #[test]
+    fn a_click_on_the_empty_space_selects_nothing_in_every_layout() {
+        for (classic, width) in [(true, 680.0), (false, 440.0), (false, 800.0), (false, 1180.0)] {
+            for ctrl in [false, true] {
+                let mut h = Harness::new();
+                h.classic = classic;
+                super::super::super::widgets::place_floater(&h.ctx, "inventory", egui::pos2(10.0, 40.0), egui::vec2(width, 950.0));
+                h.st.show_original(&h.world.inventory, id(8100));
+                for _ in 0..4 {
+                    h.frame(Vec::new());
+                }
+                h.select(id(8100), false);
+                assert_eq!(h.st.selected, Some(id(8100)), "{classic}, {width}");
+                // the bottom of the list, below its last row
+                let list = h.ctx.read_response(focus_id(&h.st)).expect("inventory list").rect;
+                let blank = egui::pos2(list.center().x, list.bottom() - 6.0);
+                assert!(
+                    blank.y > h.row(id(8100)).y + 40.0,
+                    "the click must land below the rows: {classic}, {width}"
+                );
+                h.click(
+                    blank,
+                    egui::Modifiers {
+                        ctrl,
+                        command: ctrl,
+                        ..Default::default()
+                    },
+                );
+                if ctrl {
+                    assert_eq!(h.st.selected, Some(id(8100)), "Ctrl keeps it: {classic}, {width}");
+                } else {
+                    assert_eq!(h.st.selected, None, "{classic}, {width}");
+                    assert!(h.st.selection.is_empty(), "{classic}, {width}");
+                    assert!(h.st.anchor.is_none(), "Shift must not extend a cleared selection");
+                }
+            }
+        }
+    }
+
     #[test]
     fn inventory_rename_returns_navigation_to_the_list_in_every_layout() {
         for (classic, width) in [(true, 680.0), (false, 440.0), (false, 800.0), (false, 1180.0)] {
@@ -1443,6 +1608,81 @@ mod tests {
         }
     }
 
+    /// Issue #4765: a fetched empty folder has no caret, and a double-click
+    /// on it selects it without opening it, in both window styles; a folder
+    /// with contents still folds on a double-click.
+    #[test]
+    fn a_double_click_leaves_an_empty_folder_shut_in_both_styles() {
+        let shown = |h: &Harness, n| h.st.plain.rows.iter().find(|row| row.id == id(n)).map(|row| row.kind);
+        for (classic, width) in [(true, 680.0), (false, 440.0)] {
+            let mut h = Harness::new();
+            h.classic = classic;
+            super::super::super::widgets::place_floater(&h.ctx, "inventory", egui::pos2(10.0, 40.0), egui::vec2(width, 950.0));
+            for _ in 0..4 {
+                h.frame(Vec::new());
+            }
+            let empty = &h.world.inventory.folders[&id(8001)];
+            assert!(empty.state == FetchState::Fetched && empty.children.is_empty() && empty.items.is_empty());
+            assert!(h.st.plain.is_open(id(8001)), "{classic}: Expand all left it open");
+            let leaf = rows::Kind::Folder {
+                open: false,
+                branches: false,
+            };
+            assert_eq!(shown(&h, 8001), Some(leaf), "{classic}: shown shut, without a caret");
+            let double_click = |h: &mut Harness, pos: Pos2| {
+                let press = |pressed| Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed,
+                    modifiers: Default::default(),
+                };
+                h.frame(vec![Event::PointerMoved(pos), press(true), press(false), press(true), press(false)]);
+                h.frame(Vec::new());
+            };
+            h.st.plain.set_open(id(8001), false);
+            h.frame(Vec::new());
+            let pos = h.row(id(8001));
+            double_click(&mut h, pos);
+            assert_eq!(h.st.selected, Some(id(8001)), "{classic}: the double-click reached the row");
+            assert!(!h.st.plain.is_open(id(8001)), "{classic}: not even left open for later");
+            assert_eq!(shown(&h, 8001), Some(leaf), "{classic}: still shut");
+            assert!(
+                !h.st
+                    .plain
+                    .rows
+                    .iter()
+                    .any(|row| row.id == id(8001) && row.kind == rows::Kind::Empty),
+                "{classic}: no Empty line"
+            );
+            assert!(!h.st.visible.is_empty());
+            let pos = h.row(id(8000));
+            double_click(&mut h, pos);
+            assert_eq!(
+                shown(&h, 8000),
+                Some(rows::Kind::Folder {
+                    open: false,
+                    branches: true
+                }),
+                "{classic}: a folder with contents folds"
+            );
+            if classic {
+                // the Legacy-style single folder window lists 8000 flat:
+                // there an empty folder is gone into, as any other
+                h.st.open_single_folder_window(id(8000));
+                for _ in 0..4 {
+                    h.frame(Vec::new());
+                }
+                let window = h.st.windows.last().expect("single folder window");
+                assert!(window.state.lists_flat());
+                let name = format!("inventory_{}", window.id);
+                let pos = h.row_in(id(8001), &name);
+                double_click(&mut h, pos);
+                let window = h.st.windows.last().expect("single folder window");
+                assert_eq!(window.state.browse, id(8001), "the empty folder is gone into");
+            }
+        }
+    }
+
     #[test]
     fn enter_on_the_selected_inventory_object_opens_it_like_a_double_click() {
         use crate::world::appearance::Action as Wear;
@@ -1559,6 +1799,43 @@ mod tests {
         assert_eq!(h.st.selected, Some(id(20_060)));
         assert_eq!(h.st.selection.len(), 61);
         h.row(id(20_060)); // The unfiltered tree shares the same minimal scroll.
+    }
+
+    #[test]
+    fn an_ime_commit_finds_the_row_and_a_click_starts_a_new_prefix() {
+        let mut h = Harness::new();
+        h.select(id(8100), false);
+        h.frame(Vec::new());
+        assert!(h.ctx.memory(|m| m.has_focus(focus_id(&h.st))), "the click focused the list");
+        // #3889 again: a focus request on every frame interrupted the IME.
+        for _ in 0..5 {
+            h.frame(Vec::new());
+            let ime = h.output.platform_output.ime.expect("the focused list offers composition");
+            assert!(!ime.should_interrupt_composition, "the list must leave the IME composing");
+        }
+
+        h.frame(vec![Event::Ime(egui::ImeEvent::Preedit {
+            text: "でも".into(),
+            active_range_chars: Some(0..2),
+        })]);
+        assert_eq!(h.st.selected, Some(id(8100)), "a preedit does not jump");
+        h.frame(vec![Event::Ime(egui::ImeEvent::Commit("demo t".into()))]);
+        assert_eq!(h.st.selected, Some(id(8104)), "Demo texture");
+        assert_eq!(h.st.type_ahead.text(), "demo t");
+        assert!(h.st.search.is_empty(), "the filter field is untouched");
+
+        // A click on another row starts a new prefix, as LLFolderView::handleMouseDown.
+        h.select(id(8100), false);
+        assert_eq!(h.st.selected, Some(id(8100)));
+        assert!(h.st.type_ahead.text().is_empty());
+
+        // A click on the filter field clears the prefix too (Aurora's choice).
+        let field = h.text("Filter inventory");
+        h.click(field.center(), Default::default());
+        assert!(h.st.type_ahead.text().is_empty());
+        h.frame(vec![Event::Text("demo s".into())]);
+        assert_eq!(h.st.search, "demo s");
+        assert!(h.st.type_ahead.text().is_empty(), "the field took the text");
     }
 
     #[test]
@@ -2433,8 +2710,12 @@ mod tests {
             .expect("destination window");
         h.click(root.center(), Default::default());
         assert!(h.ctx.memory(|m| m.has_focus(focus_id(&h.st.windows[1].state))));
+        let dest_window = h.st.windows[1].id;
         let actions = h.paste();
-        assert!(matches!(&actions[..], [InvAction::Edit(change)] if change.copies.len() == 1 && change.copies[0].parent == id(8001)));
+        // the paste is answered in the window that asked for it (#4700)
+        assert!(matches!(&actions[..], [InvAction::Panel { editor, action }]
+            if *editor == dest_window
+                && matches!(&**action, InvAction::Edit(change) if change.copies.len() == 1 && change.copies[0].parent == id(8001))));
         h.ctx.memory_mut(|m| m.request_focus(egui::Id::unique("unrelated_widget")));
         assert!(h.paste().is_empty());
     }

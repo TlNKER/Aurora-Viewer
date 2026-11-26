@@ -540,6 +540,7 @@ impl PlacesUi {
             });
             if std::mem::take(&mut self.highland_focus_search) {
                 field.request_focus();
+                crate::ui::widgets::highland_select_all(&field.ctx, field.id, &self.filter);
             }
             widgets::icon_menu(ui, p, "settings-filled", aurora_i18n::tr!("ui-places-show-options"), |ui| {
                 if history {

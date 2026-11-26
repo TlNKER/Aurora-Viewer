@@ -267,7 +267,16 @@ pub(super) fn context_menu(
                 items: items.iter().map(|it| it.id).collect(),
             });
         }
+        highland_remove_from_all(ui, p, st, &items);
     });
+}
+
+/// Highland: "Remove from all outfits": the links to `items` leave every
+/// outfit under My Outfits (`world::highland_outfits`).
+pub(super) fn highland_remove_from_all(ui: &mut egui::Ui, p: &Palette, st: &mut super::AppearanceUi, items: &[&InvItem]) {
+    if !items.is_empty() && menu::item(ui, p, "trash-filled", aurora_i18n::tr!("highland-remove-from-all-outfits")) {
+        st.highland_unlink = items.iter().map(|it| it.id).collect();
+    }
 }
 
 /// Touch and Edit of the worn `items`. Port of
