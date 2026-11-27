@@ -368,7 +368,14 @@ pub(super) fn pane(
                 own_name: &own_name,
                 height: lines_h,
             };
-            to_field = conversation_lines(ui, p, lines, st, Rows::Thread(&mut th));
+            // Highland: Bubbles in the workspace, its lines as the tab
+            // window draws them (`LineEnv::bubbles`)
+            to_field = if st.demo_style.unwrap_or(st.style) == crate::settings::ChatStyle::Bubbles {
+                let style = super::line_style(crate::settings::ChatStyle::Bubbles, st.selected.map(|id| w.is_group_session(&id)));
+                conversation_lines(ui, p, lines, st, Rows::Classic(style))
+            } else {
+                conversation_lines(ui, p, lines, st, Rows::Thread(&mut th))
+            };
         });
         if members_shown && let Some(id) = st.selected {
             members::show(ui, p, pics, w, st, actions, id, members_w, lines_h);

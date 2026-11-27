@@ -63,7 +63,9 @@ impl ChatStyle {
     /// Aurora's workspace (column, head, members, call stage): the two
     /// first styles. The others keep the window of tabs.
     pub fn workspace(self) -> bool {
-        matches!(self, ChatStyle::Aurora | ChatStyle::Compact)
+        // Highland: Bubbles keeps the workspace too (its conversation
+        // list), only its lines drawn as bubbles (`ui/chat/workspace.rs`)
+        matches!(self, ChatStyle::Aurora | ChatStyle::Compact | ChatStyle::Bubbles)
     }
 }
 
