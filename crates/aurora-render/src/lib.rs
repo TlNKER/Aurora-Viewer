@@ -27,7 +27,8 @@ mod volume_depth;
 mod dedicated;
 mod device_lost;
 pub use device_lost::{
-    GPU_WORK_NONE, GPU_WORK_VERDICTS, in_guarded_poll, in_guarded_start, is_loss_panic, is_start_loss_panic, loss_details, start_guarded,
+    GPU_WORK_NONE, GPU_WORK_VERDICTS, in_guarded_drop, in_guarded_poll, in_guarded_start, in_guarded_ui_upload, is_drop_loss_panic,
+    is_loss_panic, is_start_loss_panic, loss_details, start_guarded,
 };
 mod dof;
 mod drawn_pick;
@@ -36,6 +37,7 @@ mod exposure;
 mod film_readback;
 mod fit_clip;
 pub use fit_clip::FitClipParams;
+mod fog;
 pub mod frame_priority;
 mod fsr;
 pub mod gi;
@@ -50,6 +52,7 @@ pub mod light_tiles;
 pub mod look_thumbs;
 pub mod looks;
 pub mod main_thread;
+mod motion_blur;
 mod motion_debug;
 mod motion_history;
 mod occlusion;
@@ -84,6 +87,7 @@ pub mod second_view;
 mod selection;
 pub mod shadow_cull;
 mod shadow_merge;
+mod shutter;
 mod soft_shadows;
 #[cfg(test)]
 mod specular_aa;
@@ -91,6 +95,7 @@ pub mod spirv_fix;
 pub mod stars;
 pub mod start_progress;
 pub mod stereo_view;
+mod sun_shafts;
 #[cfg(test)]
 mod terrain_tests;
 #[cfg(test)]
@@ -146,7 +151,7 @@ pub use contact_shadows::tile_reach as contact_tile_reach;
 pub use dof::tile_reach as dof_tile_reach;
 pub use drawn_pick::{Drawn, DrawnFace, DrawnMode};
 pub use equirect::{Answer as EquirectAnswer, CAPTURE_CAMERAS, CaptureCamera, EquirectJob, pixel_direction};
-pub use film_readback::{FilmFrame, FilmRequest, overlay_rect};
+pub use film_readback::{FilmFrame, FilmRequest, Shutter, overlay_rect};
 pub use gpu_cull::set_whole_chunk_uploads;
 pub use histogram::HISTOGRAM_BINS;
 pub use hud::HudView;

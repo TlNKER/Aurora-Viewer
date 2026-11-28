@@ -166,6 +166,9 @@ pub(super) struct Ctx<'a> {
     pub embedded_contacts: bool,
     /// A row click can open the sheet when the inline pane fits both sides.
     pub contact_sheet_on_click: bool,
+    /// The embedded Contacts pane is wide enough for the list and the sheet
+    /// side by side, whether or not the sheet is collapsed.
+    pub contact_sheet_room: bool,
 }
 
 /// A tab's list side: (ui, context, radar, state, beside a sheet).
@@ -190,6 +193,10 @@ fn split(ui: &mut egui::Ui, c: &mut Ctx, data: &RadarData, st: &mut PeopleUi, sa
             }
         } else if persistent_sheet {
             sheet::empty(&mut child, c.p, st.shown_tab == Some(TAB_GROUPS));
+        }
+        if persistent_sheet {
+            let groups = st.shown_tab == Some(TAB_GROUPS);
+            friends::sheet_toggle(&mut sheet::toggle_ui(ui, rect), c, groups);
         }
     }
 }
@@ -244,6 +251,10 @@ pub struct FriendsSettings {
     /// Highland: the hidden groups unfolded under "HIDDEN · N" at the bottom
     /// of People › Groups; kept between sessions.
     pub highland_hidden_groups_open: bool,
+    /// Conversations › Contacts keeps its sheet collapsed, under the Friends
+    /// and the Groups pills alike: the list takes the whole pane, as in a
+    /// pane too narrow for both.
+    pub sheet_collapsed: bool,
 }
 
 impl Default for FriendsSettings {
@@ -257,6 +268,7 @@ impl Default for FriendsSettings {
             permissions: true,
             highland_offline_folded: false,
             highland_hidden_groups_open: false,
+            sheet_collapsed: false,
         }
     }
 }
@@ -356,6 +368,14 @@ impl PeopleUi {
     /// Open the sheet of `id` in Near you (Aurora's look).
     pub fn open_sheet(&mut self, id: Uuid) {
         nearby::open_sheet(self, id);
+    }
+
+    /// The residents Near you shows as selected, the one whose sheet is open
+    /// included (`nearby.rs`): the People window's mini-map rings them
+    /// (`MiniMap::set_selected`).
+    pub fn map_selection(&self) -> impl Iterator<Item = Uuid> + '_ {
+        let sheet = self.sheet.filter(|id| !self.sheet_group && !self.radar_selected.contains(id));
+        self.radar_selected.iter().copied().chain(sheet)
     }
 
     /// Return from a person's sheet to the list, as its cross does.
@@ -509,6 +529,7 @@ pub fn people_window(
                 actions: &mut actions,
                 embedded_contacts: false,
                 contact_sheet_on_click: false,
+                contact_sheet_room: false,
             };
             match panels.people_tab {
                 TAB_NEARBY => {
@@ -586,7 +607,9 @@ pub struct FriendsPane<'a, 'r> {
 
 /// The friends or groups tab drawn in `ui` (Conversations › Contacts),
 /// under their pills. No window widens for a sheet there: it shows beside
-/// the list when the pane has room, alone otherwise.
+/// the list when the pane has room and the sheet is not collapsed
+/// (`FriendsSettings::sheet_collapsed`, one choice for both pills), alone
+/// otherwise.
 pub fn friends_pane(ui: &mut egui::Ui, p: &Palette, world: &World, pane: FriendsPane, contacts: &mut ContactsUi) -> Vec<PeopleAction> {
     let FriendsPane {
         st,
@@ -598,7 +621,8 @@ pub fn friends_pane(ui: &mut egui::Ui, p: &Palette, world: &World, pane: Friends
     let tab = if st.pane_groups { TAB_GROUPS } else { TAB_FRIENDS };
     st.tab_shown(tab);
     st.sheet_grow = false;
-    let wide = nearby::sheet_fits(ui.available_width());
+    let room = nearby::sheet_fits(ui.available_width());
+    let wide = room && !settings.sheet_collapsed;
     if st.inline_friends_wide && !wide {
         nearby::close_sheet(st);
     }
@@ -613,6 +637,7 @@ pub fn friends_pane(ui: &mut egui::Ui, p: &Palette, world: &World, pane: Friends
         actions: &mut actions,
         embedded_contacts: true,
         contact_sheet_on_click: wide,
+        contact_sheet_room: room,
     };
     if tab == TAB_GROUPS {
         groups::tab(ui, &mut c, data, st);
@@ -1190,6 +1215,23 @@ fn blocked_tab(ui: &mut egui::Ui, p: &Palette, world: &World, st: &mut PeopleUi,
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// The map rings the rows shown as selected: the list's selection and
+    /// the person whose sheet is open, once; never a group's sheet.
+    #[test]
+    fn the_map_selection_is_the_rows_shown_selected() {
+        let (a, b) = (Uuid::from_u128(1), Uuid::from_u128(2));
+        let mut st = PeopleUi::default();
+        assert_eq!(st.map_selection().count(), 0);
+        st.radar_selected = vec![a];
+        st.open_sheet(b);
+        assert_eq!(st.map_selection().collect::<Vec<_>>(), [a, b]);
+        st.open_sheet(a);
+        assert_eq!(st.map_selection().collect::<Vec<_>>(), [a]);
+        st.radar_selected.clear();
+        st.open_group_sheet(b);
+        assert_eq!(st.map_selection().count(), 0);
+    }
 
     /// However narrow the window, the tabs shown and the "…" of the others
     /// fit in it, the open tab is among them, and a wide window shows them

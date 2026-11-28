@@ -190,8 +190,16 @@ pub(super) fn show(
                     // the box as it grows (human request of 2026-11-15)
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Min), |ui| {
                         ui.spacing_mut().item_spacing.x = 4.0;
-                        // Highland: no emoji button (":smile:" codes still work)
+                        // Highland: no recent-emoji arrow or emoji button
+                        // (":smile:" codes still work)
                         if !HIGHLAND_SLIM_COMPOSE {
+                            // the recent emojis' arrow, before the emoji button
+                            // (`emoji::recent`): up shows the row, down hides it
+                            let (arrow, tip) = st.recent_emojis.arrow();
+                            if box_button(ui, p, arrow, tip, false).clicked() {
+                                st.recent_emojis.ask_toggle();
+                                st.conv_focus_request = true;
+                            }
                             let b = box_button(ui, p, "mood-smile-filled", aurora_i18n::tr!("ui-chat-emoji"), st.emoji_open);
                             emoji_btn = Some(b.rect);
                             if b.clicked() {
@@ -313,7 +321,9 @@ pub(super) fn show(
                                 st.recent_emojis.toggle_favorite(c);
                             }
                             if let Some(c) = picked.chosen {
-                                draft.push(c);
+                                // at the caret, which follows it (chat.rs,
+                                // the Legacy style, does the same)
+                                crate::ui::emoji::recent::place(ui.ctx(), conv_input, &mut draft, c);
                                 close = !ui.input(|i| i.modifiers.shift);
                             }
                             close |= picked.escape;
